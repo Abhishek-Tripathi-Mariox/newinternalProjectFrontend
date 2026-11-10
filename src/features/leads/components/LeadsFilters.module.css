@@ -1,0 +1,15 @@
+.search.search { flex: 1 1 160px; min-width: 140px; }
+/* Pushed to the far right of the filter row so it never sits alone at the start of a line. */
+.clear {
+  margin-left: auto;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+.clear:hover { text-decoration: underline; }

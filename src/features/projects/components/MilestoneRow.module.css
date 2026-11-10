@@ -1,0 +1,46 @@
+.row { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--row-line); }
+.body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.nameCol { min-width: 0; flex: 1 1 200px; }
+.name { font-size: 13.5px; font-weight: 600; }
+.nameInput {
+  width: 100%; max-width: 340px; font: inherit; font-size: 13.5px; font-weight: 600; padding: 3px 6px; margin: -3px -6px;
+  border: 1px solid transparent; border-radius: 6px; background: transparent; outline: none; color: var(--ink);
+}
+.nameInput:hover { border-color: var(--border-strong); }
+.nameInput:focus { border-color: oklch(0.6 0.13 265); background: #fff; }
+.due { font-size: 12px; margin-top: 2px; }
+.controls { display: flex; gap: 8px; align-items: center; }
+.select {
+  height: 30px; padding: 0 8px; border: 1px solid var(--border-input); border-radius: 7px; background: #fff;
+  font: inherit; font-size: 12.5px; font-weight: 500;
+}
+.allocLabel { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.allocInput {
+  height: 30px; padding: 0 8px; border: 1px solid var(--border-input); border-radius: 7px; background: #fff;
+  font: inherit; font-size: 12.5px; width: 74px; text-align: right;
+}
+.pmOnly { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.progress { display: flex; align-items: center; gap: 10px; }
+.bar { flex: 1; }
+.usedText { font-size: 12px; white-space: nowrap; }
+.usedText b { font-weight: 600; }
+.muted { color: var(--muted); }
+.toggle {
+  align-self: flex-start; border: 0; background: transparent; padding: 0; font-size: 12.5px; font-weight: 500;
+  color: var(--primary); cursor: pointer;
+}
+.breakdown { background: oklch(0.98 0.004 85); border: 1px solid var(--divider); border-radius: 10px; padding: 10px 14px 4px; }
+.bmSum { font-size: 12px; color: var(--muted); padding-bottom: 6px; }
+.member { border-top: 1px solid var(--divider); }
+.memberBtn {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(60px, 140px) 52px 14px; gap: 10px; align-items: center;
+  width: 100%; border: 0; background: transparent; padding: 8px 0; cursor: pointer; text-align: left;
+}
+.minw { min-width: 0; }
+.memberName { display: block; font-size: 13px; font-weight: 600; }
+.memberSub { display: block; font-size: 11.5px; color: var(--muted); }
+.memberH { text-align: right; font-size: 13.5px; font-weight: 600; }
+.chev { font-size: 11px; color: var(--muted); }
+.memberRows { padding: 0 0 10px 36px; }
+.bmEmpty { padding: 6px 0 10px; font-size: 12.5px; color: var(--muted); }

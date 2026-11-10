@@ -1,0 +1,57 @@
+/* Shared layout for the New project and Change request modals. */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
+.full { grid-column: 1 / -1; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.groupLabel { font-size: 12px; font-weight: 500; color: var(--label); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.groupLabel > .row { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.light { font-weight: 400; color: oklch(0.55 0.012 265); }
+.note { font-size: 12px; color: var(--muted); }
+.footer { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; width: 100%; }
+.spacer { flex: 1; }
+
+.lock { font-size: 12.5px; line-height: 1.5; background: oklch(0.97 0.004 85); border-radius: 9px; padding: 10px 12px; color: oklch(0.4 0.012 265); }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; }
+.tile { background: var(--surface-3); border-radius: 8px; padding: 8px 12px; }
+.tileLabel { font-size: 11.5px; color: var(--muted); }
+.tileValue { font-size: 17px; font-weight: 700; margin-top: 1px; }
+.profitGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.ptile { background: var(--surface-3); border-radius: 9px; padding: 9px 12px; }
+.ptileValue { font-size: 16px; font-weight: 600; margin-top: 2px; }
+.ptileSub { font-size: 11.5px; }
+.overText { font-size: 11.5px; font-weight: 600; color: oklch(0.5 0.18 25); }
+
+.signed {
+  border: 1.5px solid oklch(0.75 0.08 150); background: oklch(0.98 0.015 150); border-radius: 10px; padding: 12px 14px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.signedKicker { font-size: 11.5px; color: oklch(0.45 0.08 150); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.signedName { font-size: 18px; font-weight: 600; margin-top: 2px; }
+.signedMeta { font-size: 12px; color: oklch(0.45 0.012 265); margin-top: 2px; }
+.green.green { background: oklch(0.5 0.13 150); color: #fff; }
+.green.green:hover { background: oklch(0.45 0.13 150); color: #fff; }
+
+.taskRow { display: grid; grid-template-columns: minmax(0, 1fr) 170px 70px 84px 24px; gap: 8px; align-items: center; }
+.taskCost { font-size: 12px; color: var(--muted); text-align: right; }
+.removeBtn { border: 0; background: transparent; color: var(--subtle); cursor: pointer; font-size: 12px; padding: 0; }
+.removeBtn:hover { color: var(--red); }
+.addBtn { align-self: flex-start; border: 0; background: transparent; color: var(--primary); padding: 2px 0; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.right { text-align: right; }
+
+.decide { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; background: var(--surface-3); border-radius: 10px; padding: 12px; }
+.histTitle { font-size: 13px; font-weight: 600; }
+.hist { display: flex; flex-direction: column; border-left: 1.5px solid oklch(0.92 0.006 85); margin-left: 4px; }
+.histItem { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 10px; padding: 5px 0; margin-left: -5.5px; }
+.histDot { width: 9px; height: 9px; border-radius: 50%; background: oklch(0.62 0.13 265); margin-top: 5px; box-shadow: 0 0 0 3px #fff; }
+.histText { font-size: 13px; }
+.histWhen { font-size: 11.5px; color: oklch(0.55 0.012 265); }
+.docsHead { display: flex; justify-content: space-between; gap: 10px; }
+
+@media (max-width: 560px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .taskRow { grid-template-columns: minmax(0, 1fr) 1fr 60px 24px; }
+  .taskCost { display: none; }
+}
+.strong { font-weight: 600; }
+.del.del { color: oklch(0.5 0.15 25); font-weight: 600; }
+.histTitle { color: var(--ink); }

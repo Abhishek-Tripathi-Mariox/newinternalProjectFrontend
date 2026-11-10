@@ -1,0 +1,49 @@
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
+.full { grid-column: 1 / -1; min-width: 0; }
+@media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+
+.hintInline { font-weight: 400; color: oklch(0.55 0.012 265); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border-input);
+  background: var(--surface);
+  color: oklch(0.35 0.015 265);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.chipOn { border-color: oklch(0.65 0.13 265); background: oklch(0.95 0.04 265); color: oklch(0.38 0.14 265); }
+.mark { font-size: 11px; width: 10px; }
+
+.locked {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid oklch(0.92 0.006 85);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: oklch(0.35 0.015 265);
+}
+.lockedNote { font-size: 11.5px; color: var(--muted); font-weight: 400; }
+
+.dups {
+  border: 1px solid oklch(0.86 0.06 25);
+  background: oklch(0.975 0.015 25);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dupTitle { font-size: 13px; font-weight: 600; color: oklch(0.45 0.15 25); }
+.dupRow { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+.dupText { flex: 1; min-width: 0; }

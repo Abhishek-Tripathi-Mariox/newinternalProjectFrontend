@@ -1,0 +1,25 @@
+.card { border: 1px solid oklch(0.92 0.006 85); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.head { display: flex; align-items: flex-start; gap: 10px; justify-content: space-between; }
+.titleBtn { border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; min-width: 0; flex: 1; color: inherit; }
+.meta { font-size: 12px; color: var(--muted); }
+.mono { font-family: var(--mono); font-size: 11px; }
+.title { font-size: 14px; font-weight: 600; margin-top: 2px; }
+.badge { padding: 2px 9px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.figures { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; }
+.figures b { font-weight: 600; }
+.muted { color: var(--muted); }
+.docs { color: oklch(0.45 0.12 265); }
+.used { display: flex; align-items: center; gap: 10px; }
+.grow { flex: 1; }
+.usedText { font-size: 12px; white-space: nowrap; }
+.track { font-size: 12px; color: var(--muted); }
+.over { font-size: 12.5px; font-weight: 600; color: oklch(0.5 0.18 25); background: oklch(0.97 0.02 25); border-radius: 7px; padding: 6px 10px; }
+.near { font-size: 12.5px; font-weight: 500; color: oklch(0.48 0.12 70); }
+.moneyRow { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 12.5px; }
+.money { font-weight: 600; }
+.team { display: flex; align-items: center; gap: 8px; }
+.sig { font-size: 12px; font-weight: 500; color: oklch(0.42 0.12 150); }
+.note { font-size: 12.5px; color: oklch(0.48 0.15 25); }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.approve.approve { background: oklch(0.5 0.13 150); }
+.approve.approve:hover { background: oklch(0.45 0.13 150); }

@@ -1,0 +1,75 @@
+.head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.mb8 { margin-bottom: 8px; }
+.count { font-weight: 400; font-size: 12px; color: var(--muted); }
+.link {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  padding: 4px 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.more { padding-top: 6px; }
+.empty { font-size: 13px; color: var(--muted); padding: 12px 0; border-top: 1px solid var(--row-line); }
+
+.quote { padding: 10px 0; border-top: 1px solid var(--row-line); display: flex; flex-direction: column; gap: 6px; }
+.quoteTop { display: flex; align-items: center; gap: 8px; }
+.mono { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+.qStatus { padding: 1px 8px; border-radius: 10px; font-size: 11.5px; font-weight: 600; }
+.qTotal { margin-left: auto; font-weight: 600; font-size: 13.5px; }
+.meta { font-size: 12px; color: var(--muted); }
+.btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.sm {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  border-radius: 7px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ok { border: 0; background: oklch(0.5 0.13 150); color: #fff; }
+.bad { border-color: oklch(0.86 0.06 25); color: oklch(0.48 0.15 25); }
+
+.actRow { display: flex; gap: 6px; margin-bottom: 8px; }
+.actSelect {
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.actInput {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  outline: none;
+}
+.actInput:focus { border-color: var(--primary-ring); }
+.actBtn {
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: #fff;
+  padding: 0 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.actKind { font-weight: 600; }
+.feed { list-style: none; margin: 0 0 0 4px; padding: 0; display: flex; flex-direction: column; border-left: 1.5px solid oklch(0.92 0.006 85); }
+.feedItem { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 10px; padding: 7px 0; margin-left: -5.5px; }
+.feedDot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; box-shadow: 0 0 0 3px #fff; }
+.feedText { font-size: 13px; line-height: 1.45; color: oklch(0.25 0.015 265); }
+.feedWhen { font-size: 11.5px; color: oklch(0.55 0.012 265); margin-top: 1px; }

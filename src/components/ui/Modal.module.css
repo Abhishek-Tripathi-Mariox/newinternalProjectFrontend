@@ -1,0 +1,87 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop);
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: fade 0.12s ease-out;
+}
+.panel {
+  width: min(var(--w, 580px), 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  outline: none;
+  display: flex;
+  flex-direction: column;
+  animation: pop 0.14s ease-out;
+}
+.head {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.titles { min-width: 0; }
+.title { margin: 0; font-size: 17px; font-weight: 600; }
+.sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+.foot {
+  padding: 14px 22px;
+  border-top: 1px solid var(--divider);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+}
+/* Footer with only right-aligned buttons. */
+.foot > :only-child { margin-left: auto; }
+
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--backdrop-drawer);
+  z-index: var(--z-drawer);
+  display: flex;
+  justify-content: flex-end;
+  animation: fade 0.12s ease-out;
+}
+.drawer {
+  width: min(var(--w, 620px), 100%);
+  height: 100%;
+  background: #fff;
+  overflow-y: auto;
+  box-shadow: -12px 0 32px oklch(0.2 0.02 265 / 0.15);
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  animation: slide 0.18s ease-out;
+}
+.drawerHead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.drawerTop { display: flex; justify-content: space-between; gap: 12px; }
+.drawerTitle { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+.drawerBody { padding: 18px 22px 40px; display: flex; flex-direction: column; gap: 22px; }
+
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop { from { opacity: 0; transform: translateY(6px) scale(0.99); } to { opacity: 1; transform: none; } }
+@keyframes slide { from { transform: translateX(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }

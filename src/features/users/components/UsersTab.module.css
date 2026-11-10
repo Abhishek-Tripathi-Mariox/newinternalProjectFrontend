@@ -1,0 +1,37 @@
+/* One row at ≥ 1280px: capped search, content-sized selects, "Clear filters" on the right. */
+.filters {
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  padding: 10px 12px;
+}
+
+.search.search {
+  flex: 1 1 240px;
+  min-width: 200px;
+  max-width: 360px;
+}
+
+.select.select {
+  flex: 0 0 auto;
+  width: auto;
+  height: 34px;
+  font-size: 13px;
+  max-width: 200px;
+}
+
+.clear {
+  height: 34px;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0 6px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.clear:hover {
+  text-decoration: underline;
+}

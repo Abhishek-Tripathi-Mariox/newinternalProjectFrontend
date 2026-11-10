@@ -1,0 +1,5 @@
+.titleWrap { display: flex; align-items: center; gap: 12px; }
+/* Explicit width (not just flex-basis) so the toolbar's intrinsic width includes it and
+   range, team, search and Export CSV stay on one line. Doubled class beats the kit's
+   growing `.search` rule regardless of CSS order. */
+.search.search { width: 220px; flex: 0 1 auto; min-width: 160px; }

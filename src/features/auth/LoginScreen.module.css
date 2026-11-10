@@ -1,0 +1,67 @@
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-login);
+  background: var(--sidebar);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+.col { width: min(420px, 100%); display: flex; flex-direction: column; gap: 18px; }
+.brand { display: flex; align-items: center; gap: 12px; color: #fff; }
+.mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--brand-mark);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 19px;
+}
+.brandName { font-weight: 600; font-size: 17px; }
+.brandSub { font-size: 13px; color: oklch(0.75 0.02 265); }
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 24px 60px oklch(0.1 0.02 265 / 0.4);
+}
+.title { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+.sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.input { height: 42px; padding: 0 12px; border: 1px solid oklch(0.88 0.008 85); border-radius: 9px; font-size: 14px; outline: none; width: 100%; }
+.err { font-size: 12.5px; color: oklch(0.5 0.18 25); }
+.submit {
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.submit:hover { background: oklch(0.45 0.17 265); }
+.demo { background: var(--sidebar-2); border-radius: var(--radius-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.demoHead { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: oklch(0.72 0.02 265); margin: 0; }
+.demoBtn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: oklch(0.3 0.02 265);
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+.demoBtn:hover { background: oklch(0.34 0.025 265); }
+.demoName { font-size: 13px; font-weight: 600; }
+.demoEmail { display: block; font-size: 11.5px; color: oklch(0.75 0.02 265); }
+.demoRole { font-size: 11.5px; color: oklch(0.8 0.04 265); white-space: nowrap; }

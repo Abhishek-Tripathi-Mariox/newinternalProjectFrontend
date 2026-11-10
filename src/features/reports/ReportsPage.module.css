@@ -1,0 +1,4 @@
+.head { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.titleRow { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.navBtn { width: 34px; padding: 0; font-size: 15px; justify-content: center; }
+.navLabel { font-size: 14px; font-weight: 600; min-width: 150px; text-align: center; }

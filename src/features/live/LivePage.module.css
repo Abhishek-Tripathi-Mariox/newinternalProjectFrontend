@@ -1,0 +1,13 @@
+/*
+ * The team table needs ~1000px for all columns incl. Controls, so it takes the full
+ * row and the activity feed sits below it. On very wide screens they go side by side.
+ */
+.split { display: flex; flex-direction: column; gap: 16px; }
+.team, .feed { min-width: 0; }
+@media (min-width: 2300px) {
+  .split { flex-direction: row; align-items: flex-start; }
+  .team { flex: 2 1 0; }
+  .feed { flex: 1 1 360px; }
+}
+.waBtn { color: oklch(0.4 0.11 150); }
+.waBtn:hover { background: oklch(0.97 0.02 150); }

@@ -1,0 +1,191 @@
+/* ---------- shared bits ---------- */
+.check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid oklch(0.8 0.01 265);
+  background: #fff;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.checkOn {
+  border-color: oklch(0.55 0.14 150);
+  background: oklch(0.55 0.14 150);
+}
+
+.plainBtn {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+}
+
+.titleDone {
+  color: oklch(0.6 0.01 265) !important;
+  text-decoration: line-through;
+}
+
+.typeTag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.linkBtn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+}
+.linkBtn:hover { text-decoration: underline; }
+
+.meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.metaType { font-weight: 600; }
+
+.meet {
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid oklch(0.88 0.03 150);
+  background: oklch(0.97 0.025 150);
+  color: oklch(0.4 0.11 150);
+  border-radius: 7px;
+  padding: 5px 10px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.meetPlain {
+  font-size: 12px;
+  font-weight: 600;
+  color: oklch(0.4 0.11 150);
+  white-space: nowrap;
+}
+
+.ghostBtn {
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border-input);
+  background: #fff;
+  color: oklch(0.3 0.015 265);
+  border-radius: 7px;
+  padding: 5px 9px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.ghostBtn:hover { background: var(--hover); }
+
+.delBtn {
+  font-size: 13px;
+  border: 0;
+  background: transparent;
+  color: oklch(0.55 0.012 265);
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.delBtn:hover { color: oklch(0.55 0.18 25); }
+
+/* ---------- full list row (grid "table") ---------- */
+.grid {
+  display: grid;
+  grid-template-columns:
+    34px minmax(220px, 2.2fr) minmax(120px, 1.2fr) minmax(140px, 1.3fr)
+    minmax(110px, 1fr) 96px 120px minmax(250px, auto);
+  align-items: center;
+  font-size: 13px;
+}
+.head {
+  background: var(--surface-3);
+  font-size: 12px;
+  color: var(--label);
+  font-weight: 500;
+}
+.head .cell, .head .cellCheck { padding-top: 10px; padding-bottom: 10px; }
+.row { border-top: 1px solid var(--row-line); }
+.cellCheck { padding: 12px 0 12px 16px; }
+.cell { padding: 12px 14px; min-width: 0; }
+.actionsCell { padding-right: 16px; }
+.right { text-align: right; }
+.nowrap { white-space: nowrap; }
+
+.titleWrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rowTitle { font-weight: 600; }
+.owner { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.dueDate { font-weight: 500; }
+.dueTime { font-size: 12px; opacity: 0.8; margin-top: 1px; }
+.remind { font-size: 12.5px; color: var(--label); white-space: nowrap; }
+.actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+
+/* ---------- lead drawer ---------- */
+.lead {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--row-line);
+}
+.leadTitle { font-size: 13px; font-weight: 500; color: var(--ink); }
+
+/* ---------- dashboard agenda ---------- */
+.agenda {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--row-line);
+}
+.agendaTime { font-size: 13px; font-weight: 600; }
+.agendaTitle {
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- calendar selected-day panel ---------- */
+.day {
+  display: grid;
+  grid-template-columns: 20px 58px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding-top: 10px;
+  border-top: 1px solid var(--row-line);
+}
+.dayCheck { margin-top: 1px; }
+.dayTime { font-size: 12.5px; font-weight: 600; padding-top: 1px; }
+.dayBody { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.dayTitle { font-size: 13px; font-weight: 600; }
+.dayMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+.dayMeta .typeTag { padding: 1px 6px; }
+.dayMeta .linkBtn { font-size: 12px; }
+.dayMeet { align-self: flex-start; padding: 4px 9px; }

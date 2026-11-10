@@ -1,0 +1,9 @@
+.chip {
+  display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 11px; border-radius: 15px; font: inherit;
+  font-size: 12.5px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-input); background: #fff; color: oklch(0.35 0.015 265);
+}
+.chip:hover:not(:disabled) { border-color: oklch(0.8 0.01 265); }
+.chip:disabled { cursor: default; }
+.on { background: oklch(0.94 0.04 265); border-color: oklch(0.65 0.13 265); color: oklch(0.38 0.14 265); }
+.withMark { height: 32px; padding: 0 12px; border-radius: 16px; font-size: 13px; gap: 6px; }
+.mark { font-size: 11px; width: 10px; }

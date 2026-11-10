@@ -1,0 +1,10 @@
+.page { display: flex; flex-direction: column; gap: 16px; }
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.title { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.015em; }
+.sub { font-size: 13.5px; color: var(--muted); margin-top: 4px; }

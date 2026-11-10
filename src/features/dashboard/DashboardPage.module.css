@@ -1,0 +1,85 @@
+.page { display: flex; flex-direction: column; gap: 16px; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.title { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.015em; }
+.sub { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.range { display: flex; align-items: center; gap: 6px; }
+.rangeSep { font-size: 12.5px; color: var(--muted); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 14px; }
+/* Wide screens: fixed 3 columns; the Sales team table fills the 2 columns next to Lead sources. */
+@media (min-width: 1300px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid > .teamCard { grid-column: span 2; }
+}
+.h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.link {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 6px 4px;
+  cursor: pointer;
+  text-align: left;
+  border-radius: var(--radius-xs);
+  font: inherit;
+  color: inherit;
+}
+.barRowValue { grid-template-columns: 112px minmax(0, 1fr) 72px 30px; padding: 7px 4px; }
+.barRow:hover { background: var(--surface-3); }
+.barLabel { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.sq { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.barValue { font-size: 12.5px; color: var(--muted); text-align: right; }
+.barCount { font-size: 13px; font-weight: 600; text-align: right; }
+
+.trendCard { display: flex; flex-direction: column; }
+.trendHead { display: flex; justify-content: space-between; align-items: center; }
+.legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); }
+.legend > span { display: flex; align-items: center; gap: 6px; }
+.sq9 { width: 9px; height: 9px; border-radius: 2px; }
+.bars { display: flex; align-items: flex-end; gap: 10px; height: 200px; margin-top: auto; padding-top: 16px; }
+.barCol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.barTotal, .barMonth { font-size: 11.5px; color: var(--muted); }
+.barMonth { font-size: 12px; }
+.bar {
+  width: 100%;
+  max-width: 38px;
+  background: oklch(0.9 0.04 265);
+  border-radius: 5px 5px 2px 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+.barWon { background: var(--primary); }
+
+.overdue {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: oklch(0.96 0.03 25);
+  color: oklch(0.45 0.15 25);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  margin: 6px 0;
+}
+.empty { font-size: 13px; color: var(--muted); padding: 18px 0; }
+
+.teamCard { overflow-x: auto; min-width: 0; grid-column: 1 / -1; }
+.teamTable { min-width: 640px; }
+.owner { display: flex; align-items: center; gap: 10px; }

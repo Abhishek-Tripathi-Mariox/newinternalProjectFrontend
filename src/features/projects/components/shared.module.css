@@ -1,0 +1,60 @@
+/* Small building blocks shared by the Projects tabs, drawer and modals. */
+.dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; display: inline-block; }
+.roundDot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+
+.nameRow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.name { font-weight: 600; }
+.sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.mono { font-family: var(--mono); font-size: 11px; }
+.muted { color: var(--muted); }
+.strong { font-weight: 600; }
+.nowrap { white-space: nowrap; }
+.right { text-align: right; }
+
+/* meter: "12h / 40h      30%" over a 6px bar */
+.meter { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.meterHead { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; align-items: center; }
+.meterHead > span { white-space: nowrap; }
+
+.healthPill {
+  display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.badge { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+.numBadge {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
+  font-size: 11px; font-weight: 600;
+}
+.numBadgeLg { width: 26px; height: 26px; font-size: 12px; }
+
+/* project board card */
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+  cursor: grab; display: flex; flex-direction: column; gap: 9px; text-align: left; width: 100%;
+}
+.card:hover { border-color: var(--border-hover); }
+.cardTitle { font-size: 13.5px; font-weight: 600; }
+.cardFoot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cardDue { font-size: 11.5px; }
+
+/* date / note / hours rows */
+.entry {
+  display: grid; grid-template-columns: 118px minmax(0, 1fr) 44px; gap: 10px; align-items: baseline;
+  padding: 5px 0; border-top: 1px solid var(--divider); font-size: 12.5px;
+}
+.entry > :first-child { font-weight: 500; white-space: nowrap; }
+.entry > :nth-child(2) { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entry > :last-child { text-align: right; font-weight: 600; }
+
+.panel {
+  background: oklch(0.98 0.004 85); border: 1px solid var(--divider); border-radius: 10px;
+}
+
+.linkBtn {
+  align-self: flex-start; border: 0; background: transparent; padding: 0; font-size: 12.5px; font-weight: 500;
+  color: var(--primary); cursor: pointer;
+}
+.linkBtn:hover { color: var(--link-hover); }
+
+.empty { padding: 10px 0; font-size: 13px; color: var(--muted); }
+.emptyBox { padding: 40px; text-align: center; font-size: 13.5px; color: var(--muted); }

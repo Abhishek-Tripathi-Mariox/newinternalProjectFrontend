@@ -1,0 +1,4 @@
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
+.head { padding: 14px 16px; }
+.title { margin: 0; font-size: 15px; font-weight: 600; }
+.strong { font-weight: 600; }

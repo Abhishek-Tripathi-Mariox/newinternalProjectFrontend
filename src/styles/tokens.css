@@ -1,0 +1,87 @@
+/*
+ * Design tokens — values taken verbatim from the prototype's inline styles.
+ * Everything else in the app (CSS modules) should reference these.
+ */
+:root {
+  /* Surfaces */
+  --bg: oklch(0.982 0.004 85);
+  --surface: #fff;
+  --surface-2: oklch(0.985 0.003 85);   /* inputs / subtle panels */
+  --surface-3: oklch(0.975 0.004 85);   /* table heads, stat tiles */
+  --hover: oklch(0.97 0.004 85);
+  --hover-row: oklch(0.98 0.006 265);
+  --soft: oklch(0.96 0.004 85);         /* close buttons */
+  --track: oklch(0.945 0.005 85);       /* segmented controls */
+  --bar-track: oklch(0.95 0.005 85);
+
+  /* Ink */
+  --ink: oklch(0.23 0.015 265);
+  --ink-2: oklch(0.3 0.015 265);
+  --muted: oklch(0.52 0.012 265);
+  --label: oklch(0.48 0.012 265);
+  --subtle: oklch(0.6 0.012 265);
+  --faint: oklch(0.75 0.01 265);
+
+  /* Lines */
+  --border: oklch(0.915 0.006 85);
+  --border-input: oklch(0.9 0.006 85);
+  --border-strong: oklch(0.88 0.008 85);
+  --divider: oklch(0.93 0.005 85);
+  --row-line: oklch(0.94 0.004 85);
+  --border-hover: oklch(0.75 0.08 265);
+
+  /* Brand */
+  --primary: oklch(0.5 0.17 265);
+  --primary-hover: oklch(0.44 0.17 265);
+  --primary-ink: oklch(0.45 0.15 265);
+  --primary-soft: oklch(0.94 0.03 265);
+  --primary-ring: oklch(0.65 0.13 265);
+  --link-hover: oklch(0.42 0.17 265);
+
+  /* Sidebar */
+  --sidebar: oklch(0.21 0.02 265);
+  --sidebar-2: oklch(0.26 0.02 265);
+  --sidebar-active: oklch(0.32 0.03 265);
+  --sidebar-line: oklch(0.3 0.02 265);
+  --sidebar-ink: oklch(0.8 0.015 265);
+  --sidebar-muted: oklch(0.7 0.02 265);
+  --sidebar-heading: oklch(0.62 0.02 265);
+  --brand-mark: oklch(0.6 0.17 265);
+
+  /* Status */
+  --red: oklch(0.55 0.18 25);
+  --red-text: oklch(0.5 0.17 25);
+  --green: oklch(0.58 0.13 150);
+  --green-text: oklch(0.5 0.13 150);
+  --amber: oklch(0.72 0.14 70);
+  --amber-text: oklch(0.5 0.12 70);
+  --blue: oklch(0.55 0.15 265);
+
+  /* Shape */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow: 0 12px 32px oklch(0.2 0.02 265 / 0.14);
+  --shadow-lg: 0 24px 60px oklch(0.2 0.02 265 / 0.25);
+  --shadow-toast: 0 8px 24px oklch(0.2 0.02 265 / 0.25);
+  --shadow-seg: 0 1px 2px oklch(0.2 0.02 265 / 0.12);
+  --backdrop: oklch(0.2 0.02 265 / 0.4);
+  --backdrop-drawer: oklch(0.2 0.02 265 / 0.3);
+
+  /* Type */
+  --font: 'Instrument Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Layers */
+  --z-header: 5;
+  --z-drawer: 40;
+  --z-modal: 60;
+  --z-toast: 80;
+  --z-login: 200;
+
+  --focus-ring: 0 0 0 3px oklch(0.5 0.17 265 / 0.25);
+}

@@ -1,0 +1,83 @@
+.header {
+  height: 60px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  gap: 12px;
+}
+.crumbs { display: flex; align-items: center; gap: 8px; font-size: 13.5px; min-width: 0; white-space: nowrap; }
+.crumb { color: var(--muted); }
+.sep { color: var(--faint); }
+.title { font-weight: 600; margin: 0; font-size: inherit; }
+.right { display: flex; align-items: center; gap: 10px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.today { font-size: 13px; color: var(--muted); margin-right: 4px; white-space: nowrap; }
+
+.sess {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 3px 3px 10px;
+  border: 1px solid var(--border-input);
+  border-radius: 10px;
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin-right: 4px;
+  cursor: pointer;
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.statusText { font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+.caret { font-size: 11px; color: var(--muted); }
+.sBtn {
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.checkIn { background: oklch(0.5 0.13 150); color: #fff; }
+.checkIn:hover { background: oklch(0.45 0.13 150); }
+.brk { border: 1px solid var(--border-strong); background: #fff; color: var(--ink-2); }
+.brk:hover { background: var(--hover); }
+.brkOn { background: oklch(0.72 0.14 70); color: oklch(0.25 0.05 70); border-color: oklch(0.72 0.14 70); }
+.brkOn:hover { background: oklch(0.68 0.14 70); }
+.end { background: var(--ink); color: #fff; }
+.end:hover { background: oklch(0.3 0.015 265); }
+
+.pop {
+  position: fixed;
+  z-index: 61;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  background: #fff;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  outline: none;
+}
+.popTitle { font-size: 14px; font-weight: 600; margin: 0; }
+.popSub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.popEmpty { font-size: 13px; color: var(--muted); }
+.popList { max-height: 280px; overflow: auto; }

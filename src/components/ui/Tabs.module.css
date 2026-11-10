@@ -1,0 +1,40 @@
+.tabs {
+  display: flex;
+  gap: 4px;
+  /* Bottom rule drawn as an inset shadow so the active underline (inside each tab) can sit on
+     it without overflowing — no stray scrollbar. Scrolls sideways only when tabs don't fit. */
+  box-shadow: inset 0 -1px 0 var(--border);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.tab:hover { color: var(--ink); }
+.on { color: var(--ink); border-bottom-color: var(--primary); }
+.count {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: oklch(0.95 0.004 85);
+  color: var(--muted);
+}
+.on .count { background: oklch(0.93 0.04 265); color: oklch(0.42 0.15 265); }
+.count.red { background: oklch(0.95 0.04 25); color: oklch(0.45 0.15 25); }
+.count.amber { background: oklch(0.95 0.05 75); color: oklch(0.45 0.12 70); }

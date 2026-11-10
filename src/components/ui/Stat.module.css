@@ -1,0 +1,5 @@
+.stat { background: var(--surface-3); border-radius: var(--radius-sm); padding: 8px 10px; min-width: 0; }
+.label { font-size: 11px; color: var(--muted); }
+.value { font-size: 14px; font-weight: 600; margin-top: 2px; }
+.sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.grid { display: grid; gap: 8px; }

@@ -1,0 +1,19 @@
+.btn {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--soft);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+.btn:hover:not(:disabled) { background: oklch(0.93 0.005 85); }
+.plain { background: transparent; color: var(--subtle); width: auto; min-width: 24px; padding: 0 4px; }
+.plain:hover:not(:disabled) { background: transparent; color: oklch(0.55 0.18 25); }
+.lg { width: 32px; height: 32px; }

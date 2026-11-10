@@ -1,0 +1,118 @@
+.minw { min-width: 0; }
+.idLine { font-family: var(--mono); font-size: 11px; color: oklch(0.55 0.012 265); }
+.company { font-size: 21px; font-weight: 600; margin-top: 4px; letter-spacing: -0.01em; }
+.contact { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 13px; line-height: 1.5; color: var(--label); margin-top: 2px; }
+.email { word-break: break-all; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.badge { padding: 2px 8px; border-radius: var(--radius-xs); font-size: 11.5px; line-height: 1.5; white-space: nowrap; font-weight: 500; }
+.hot { background: oklch(0.55 0.17 35); color: #fff; font-weight: 600; }
+.editBtn {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.editBtn:hover { background: var(--hover); }
+
+.quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.quickBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.quickBtn:hover { background: var(--hover); }
+.wa { color: oklch(0.4 0.11 150); }
+.wa:hover { background: oklch(0.97 0.02 150); }
+.quickPrimary {
+  height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.quickPrimary:hover { background: var(--primary-hover); }
+
+.body { padding-bottom: 28px; }
+
+.facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: oklch(0.92 0.006 85);
+  border: 1px solid oklch(0.92 0.006 85);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fact { background: var(--surface); padding: 11px 13px; }
+.ownerFact { display: flex; flex-direction: column; gap: 4px; }
+.factLabel { font-size: 11.5px; color: var(--muted); }
+.factBig { font-size: 18px; font-weight: 600; margin-top: 3px; }
+.factVal { font-size: 14px; font-weight: 500; margin-top: 3px; }
+.ownerRow { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.transfer {
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--primary-ink);
+}
+.ownerName { font-size: 14px; font-weight: 600; color: oklch(0.25 0.015 265); }
+.firstOwner { font-weight: 600; color: oklch(0.35 0.015 265); }
+
+.dups {
+  border: 1px solid oklch(0.86 0.06 25);
+  background: oklch(0.975 0.015 25);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dupTitle { font-size: 13px; font-weight: 600; color: oklch(0.45 0.15 25); }
+.dupRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.dupText { flex: 1 1 180px; min-width: 0; }
+.muted { color: var(--muted); }
+.mergeBtn {
+  border: 0;
+  background: oklch(0.5 0.15 25);
+  color: #fff;
+  border-radius: 7px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notes { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: var(--ink); }
+.notesInput {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  padding: 10px 12px;
+  border: 1px solid var(--border-input);
+  border-radius: 9px;
+  background: var(--surface-2);
+  resize: vertical;
+  color: oklch(0.25 0.015 265);
+}
+

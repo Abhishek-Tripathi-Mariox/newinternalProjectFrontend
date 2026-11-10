@@ -1,0 +1,133 @@
+/* Narrow screens scroll the matrix sideways; from 900px it fits, so the header can stick under the app bar. */
+.wrap {
+  overflow-x: auto;
+}
+
+@media (min-width: 900px) {
+  .wrap {
+    overflow: visible;
+  }
+
+  .table thead th {
+    position: sticky;
+    top: 60px;
+    z-index: 1;
+    background: var(--surface);
+    box-shadow: inset 0 -1px 0 var(--row-line);
+  }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 560px;
+}
+
+.table thead tr {
+  font-size: 12px;
+  color: oklch(0.48 0.012 265);
+}
+
+.table tbody tr {
+  border-top: 1px solid oklch(0.94 0.004 85);
+}
+
+.table th {
+  font-weight: 500;
+}
+
+.modTh {
+  padding: 8px 8px 8px 0;
+  text-align: left;
+}
+
+.actTh {
+  padding: 8px 4px;
+  text-align: center;
+  width: 68px;
+}
+
+.scopeTh {
+  padding: 8px 0 8px 16px;
+  text-align: left;
+  width: 180px;
+}
+
+.modTd {
+  padding: 9px 8px 9px 0;
+}
+
+.modName {
+  font-weight: 600;
+}
+
+.hint {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.actTd {
+  padding: 9px 4px;
+  text-align: center;
+}
+
+.scopeTd {
+  padding: 9px 0 9px 16px;
+}
+
+.check {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid oklch(0.82 0.01 265);
+  background: #fff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  margin: 0 auto;
+}
+
+.check.on {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.check.locked {
+  cursor: not-allowed;
+}
+
+.check.on.locked {
+  background: oklch(0.7 0.04 265);
+  border-color: oklch(0.7 0.04 265);
+}
+
+.scope {
+  display: inline-flex;
+  background: oklch(0.95 0.005 85);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.scopeBtn {
+  border: 0;
+  padding: 4px 9px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--muted);
+}
+
+.scopeOn {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 2px oklch(0.2 0.02 265 / 0.12);
+}

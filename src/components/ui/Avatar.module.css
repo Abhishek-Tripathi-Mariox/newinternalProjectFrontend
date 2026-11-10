@@ -1,0 +1,13 @@
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}
+.stack { display: inline-flex; align-items: center; }
+.stack > * + * { margin-left: -6px; }
+.ring { box-shadow: 0 0 0 2px #fff; }
+.more { background: oklch(0.94 0.005 85); color: var(--muted); }

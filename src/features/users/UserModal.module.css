@@ -1,0 +1,54 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 12px;
+}
+
+.grid > * {
+  min-width: 0;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.deliveryNote {
+  display: flex;
+  align-items: flex-end;
+  font-size: 12px;
+  color: oklch(0.48 0.012 265);
+}
+
+.summary {
+  background: oklch(0.975 0.006 265);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: oklch(0.38 0.06 265);
+}
+
+.accountActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid oklch(0.94 0.004 85);
+  padding-top: 12px;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.footerRight {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,26 @@
+.chip {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 16px;
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.chip:hover { color: var(--primary); border-color: var(--primary); }
+.input {
+  height: 32px;
+  width: 160px;
+  padding: 0 12px;
+  border-radius: 16px;
+  border: 1px solid var(--primary);
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}

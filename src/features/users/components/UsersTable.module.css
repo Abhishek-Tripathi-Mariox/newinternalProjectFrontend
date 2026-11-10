@@ -1,0 +1,117 @@
+/*
+ * Fixed layout with a share per column (User 24%), long text ellipsises, so the
+ * table always fits its card at laptop widths (≥ 1280px). Below ~1000px of card width
+ * the DataTable's own scroller takes over instead of squashing the columns.
+ */
+.table table {
+  table-layout: fixed;
+  min-width: 900px;
+}
+
+.table th,
+.table td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: 16px;
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: 16px;
+}
+
+.table td {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.userBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.userBtn:hover .name {
+  color: var(--primary);
+}
+
+.userText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name,
+.email,
+.sub,
+.cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.email {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rolePill {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub {
+  display: block;
+  max-width: 100%;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.cell {
+  display: block;
+}
+
+.soft {
+  display: block;
+  color: oklch(0.4 0.012 265);
+  line-height: 1.4;
+  text-wrap: balance;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.menuSpacer {
+  width: 30px;
+  flex-shrink: 0;
+}

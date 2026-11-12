@@ -114,12 +114,18 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
         </div>
         {picking && (
           <div className={s.teamPick}>
-            {(project.team || []).map((id) => (
-              <ToggleChip key={id} on={team.includes(id)} onClick={() => toggleTeam(id)}>
-                {(memberById[id] || { name: id }).name}
-              </ToggleChip>
-            ))}
-            <span className={s.muted}>Not listed? Add them under “Team on this project” first.</span>
+            {(project.team || []).concat(
+              Object.values(memberById).filter((x) => !x.inactive && !(project.team || []).includes(x.id)).map((x) => x.id),
+            ).map((id) => {
+              const mem = memberById[id] || { name: id };
+              const onProject = (project.team || []).includes(id);
+              return (
+                <ToggleChip key={id} on={team.includes(id)} onClick={() => toggleTeam(id)} title={onProject ? `${mem.role || ''} · on this project` : `${mem.role || ''} · joins the project team when picked`}>
+                  {mem.name}{onProject ? '' : ' +'}
+                </ToggleChip>
+              );
+            })}
+            <span className={s.muted}>“+” = not on the project yet; picking them adds them to the project team.</span>
           </div>
         )}
 

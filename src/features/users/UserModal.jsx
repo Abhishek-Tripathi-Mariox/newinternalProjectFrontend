@@ -49,7 +49,7 @@ export default function UserModal({ editId, onClose }) {
 
   const roleMap = useMemo(() => Object.fromEntries(roles.map((r) => [r.id, r])), [roles]);
   const role = roleMap[form.role];
-  const delivery = isDeliveryRole(form.role);
+  const delivery = isDeliveryRole(form.role, role);
 
   const roleOptions = useMemo(() => roles.map((r) => ({ value: r.id, label: r.name })), [roles]);
   const deptOptions = DEPARTMENTS.map((d) => ({ value: d, label: d }));

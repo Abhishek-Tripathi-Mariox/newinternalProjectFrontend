@@ -31,7 +31,14 @@ export const DATA_SCOPES = [
 export const EMPTY_PERM = { v: false, c: false, e: false, d: false, scope: 'all' };
 export const permOf = (role, mod) => ({ ...EMPTY_PERM, ...(role?.perms?.[mod] || {}) });
 
-export const isDeliveryRole = (roleId) => DELIVERY_ROLES.includes(roleId);
+const NON_DELIVERY = ['r-super', 'r-admin', 'r-sm', 'r-se', 'r-client'];
+/** Same rule as the server: built-in delivery roles, or a custom role that can see timesheets / tasks / bugs. */
+export const isDeliveryRole = (roleId, role) => {
+  if (DELIVERY_ROLES.includes(roleId)) return true;
+  if (NON_DELIVERY.includes(roleId) || !role) return false;
+  const p = role.perms || {};
+  return !!((p.ts && p.ts.v) || (p.tasks && p.tasks.v) || (p.bugs && p.bugs.v));
+};
 
 /** "Can open: Leads, Follow-ups" or "No modules enabled". */
 export function roleSummary(role) {

@@ -97,10 +97,16 @@ export default function NewProjectModal({ editId, onClose }) {
   const setMs = (key, patch) => setForm((f) => ({ ...f, ms: f.ms.map((r) => (r.key === key ? { ...r, ...patch } : r)) }));
   const addMs = () => setForm((f) => ({ ...f, ms: f.ms.concat({ key: rowKey++, name: '', due: f.due, hours: '', auto: false, team: [] }) }));
   const [teamRow, setTeamRow] = useState(null); // milestone row whose team picker is open
-  const toggleMsMember = (key, id) => setForm((f) => ({
-    ...f,
-    ms: f.ms.map((r) => (r.key === key ? { ...r, team: (r.team || []).includes(id) ? r.team.filter((x) => x !== id) : (r.team || []).concat(id) } : r)),
-  }));
+  // Picking someone who is not on the project team adds them to it as well.
+  const toggleMsMember = (key, id) => setForm((f) => {
+    const row = f.ms.find((r) => r.key === key) || {};
+    const adding = !(row.team || []).includes(id);
+    return {
+      ...f,
+      team: adding && id !== f.pm && !f.team.includes(id) ? f.team.concat(id) : f.team,
+      ms: f.ms.map((r) => (r.key === key ? { ...r, team: adding ? (r.team || []).concat(id) : r.team.filter((x) => x !== id) } : r)),
+    };
+  });
   const memberName = (id) => (members.find((m) => m.id === id) || {}).name || id;
   const removeMs = (key) => setForm((f) => ({ ...f, ms: f.ms.filter((r) => r.key !== key) }));
   const msTotal = (form.ms || []).reduce((x, r) => x + (+r.hours || 0), 0);
@@ -142,6 +148,8 @@ export default function NewProjectModal({ editId, onClose }) {
     : { ...f, team: f.team.concat(id) }));
   const otherMembers = members.filter((m) => m.id !== form.pm && (!m.inactive || form.team.includes(m.id)));
   const projectTeam = [form.pm].concat(form.team).filter(Boolean);
+  // Milestone pickers: the project team first, then every other active delivery person.
+  const msChoices = projectTeam.concat(members.filter((m) => !m.inactive && !projectTeam.includes(m.id)).map((m) => m.id));
 
   const save = async () => {
     if (busy) return;
@@ -304,11 +312,12 @@ export default function NewProjectModal({ editId, onClose }) {
               )}
               {teamRow === r.key && (
                 <div className={s.msTeam}>
-                  {projectTeam.length ? projectTeam.map((id) => (
+                  {msChoices.length ? msChoices.map((id) => (
                     <ToggleChip key={id} on={(r.team || []).includes(id)} onClick={() => toggleMsMember(r.key, id)}>
-                      {memberName(id)}
+                      {memberName(id)}{projectTeam.includes(id) ? '' : ' +'}
                     </ToggleChip>
-                  )) : <span className={s.light}>Pick a project manager and team above first.</span>}
+                  )) : <span className={s.light}>No delivery people yet — invite them from Users &amp; roles.</span>}
+                  {msChoices.some((id) => !projectTeam.includes(id)) && <span className={s.light}>“+” = joins the project team when picked.</span>}
                 </div>
               )}
             </div>

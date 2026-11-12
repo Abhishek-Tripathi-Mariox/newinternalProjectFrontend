@@ -38,6 +38,7 @@ function initialForm(members) {
     pm: members.some((m) => m.id === DEFAULT_PM) ? DEFAULT_PM : (members[0] || {}).id || '',
     start: ymd(T),
     due: ymd(T + 60 * DAY),
+    budget: '',
     team: [],
     value: '',
     prio: 'Medium',
@@ -48,9 +49,13 @@ function initialForm(members) {
   };
 }
 
-/** Existing project → form values (edit mode). */
-function editForm(p) {
+/** Existing project → form values (edit mode), with its milestones as editable rows. */
+function editForm(p, milestones) {
+  const ms = milestones.filter((m) => m.p === p.id).sort((a, b) => a.n - b.n)
+    .map((m) => ({ key: m.id, id: m.id, name: m.name, due: m.due ? ymd(m.due) : '', hours: String(m.alloc || 0), auto: false, cr: !!m.cr }));
   return {
+    ms,
+    budget: String(p.budgetHours != null ? p.budgetHours : ms.reduce((x, r) => x + (+r.hours || 0), 0)),
     name: p.name || '',
     client: p.client || '',
     clientEmail: p.clientEmail || '',
@@ -71,12 +76,15 @@ function editForm(p) {
  * stay in the drawer (budget = the milestones' hours).
  */
 export default function NewProjectModal({ editId, onClose }) {
-  const { members } = useScoped();
+  const { members, logs } = useScoped();
+  const allMilestones = useStore((st) => st.milestones);
   const saveProj = useStore((st) => st.saveProj);
   const editProj = useStore((st) => st.editProj);
   const editing = useStore((st) => (editId ? st.projects.find((p) => p.id === editId) : null));
   const isEdit = !!editId;
-  const [form, setForm] = useState(() => (editing ? editForm(editing) : initialForm(members)));
+  const [form, setForm] = useState(() => (editing ? editForm(editing, allMilestones) : initialForm(members)));
+  const [startServices] = useState(() => (editing ? String(editing.service || '').split(', ').filter(Boolean) : []));
+  const loggedOn = (mid) => !!mid && (logs || []).some((l) => l.ms === mid);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -89,14 +97,32 @@ export default function NewProjectModal({ editId, onClose }) {
   const addMs = () => setForm((f) => ({ ...f, ms: f.ms.concat({ key: rowKey++, name: '', due: f.due, hours: '', auto: false }) }));
   const removeMs = (key) => setForm((f) => ({ ...f, ms: f.ms.filter((r) => r.key !== key) }));
   const msTotal = (form.ms || []).reduce((x, r) => x + (+r.hours || 0), 0);
+  const budgetN = Math.max(0, +form.budget || 0);
+  const overBy = budgetN > 0 ? msTotal - budgetN : 0;
+  /** Split the budget across the milestones: template shares for the 5 defaults, else evenly; whole hours, remainder on the last. */
+  const distribute = () => setForm((f) => {
+    const B = Math.max(0, Math.round(+f.budget || 0));
+    const n = f.ms.length;
+    if (!B || !n) return f;
+    const tpl = n === MILESTONE_TEMPLATE.fractions.length ? MILESTONE_TEMPLATE.fractions : null;
+    let left = B;
+    const ms = f.ms.map((r, i) => {
+      const h = i === n - 1 ? left : Math.round(B * (tpl ? tpl[i] : 1 / n));
+      left -= h;
+      return { ...r, hours: String(Math.max(0, h)) };
+    });
+    return { ...f, ms };
+  });
   const services = form.service.split(', ').filter(Boolean);
+  // Services already on the project but not in the master list stay pickable while the form is open.
   const toggleService = (sv) => {
-    const list = getServices();
+    const list = getServices().concat(startServices.filter((x) => !getServices().includes(x)));
     const next = services.includes(sv) ? services.filter((x) => x !== sv) : list.filter((x) => x === sv || services.includes(x));
     setForm((f) => ({ ...f, service: next.join(', ') }));
     setErr('');
   };
-  const serviceList = useServices();
+  const masterServices = useServices();
+  const serviceList = masterServices.concat(startServices.filter((x) => !masterServices.includes(x)));
   const addService = useMasters((st) => st.addService);
   const addServiceChip = (text) => {
     const name = addService(text);
@@ -107,6 +133,10 @@ export default function NewProjectModal({ editId, onClose }) {
 
   const save = async () => {
     if (busy) return;
+    if (overBy > 0) {
+      setErr(`Milestone hours (${msTotal}h) are more than the budget (${budgetN}h). Reduce them or raise the budget.`);
+      return;
+    }
     setBusy(true);
     const e = isEdit ? await editProj(editId, form) : await saveProj(form);
     setBusy(false);
@@ -166,6 +196,9 @@ export default function NewProjectModal({ editId, onClose }) {
         <Field label="Project manager">
           <Select value={form.pm} onChange={set('pm')} options={members.map((m) => ({ value: m.id, label: m.name }))} />
         </Field>
+        <Field label="Budget (hours)">
+          <Input type="number" min="0" step="5" value={form.budget} onChange={set('budget')} placeholder="e.g. 400" />
+        </Field>
         <Field label="Start date">
           <Input type="date" value={form.start} onChange={setDate('start')} />
         </Field>
@@ -202,11 +235,21 @@ export default function NewProjectModal({ editId, onClose }) {
         <div className={s.full}>
           <DocumentsPanel docs={form.atts} onChange={(fn) => setForm((f) => ({ ...f, atts: fn(f.atts || []) }))} />
         </div>
+        </>
+        )}
         <div className={`${s.full} ${s.groupLabel}`}>
           <div className={s.row}>
             <span>Milestones</span>
             <span className={s.light}>
-              {form.ms.length} milestone{form.ms.length === 1 ? '' : 's'} · budget {msTotal}h
+              {form.ms.length} milestone{form.ms.length === 1 ? '' : 's'} · {msTotal}h{budgetN > 0 ? ` of ${budgetN}h budget` : ''}
+              {budgetN > 0 && form.ms.length > 0 && (
+                <>
+                  {' · '}
+                  <button type="button" className={s.addBtn} onClick={distribute} title="Split the budget across these milestones">
+                    Distribute budget
+                  </button>
+                </>
+              )}
             </span>
           </div>
           <div className={s.msHead}>
@@ -220,23 +263,33 @@ export default function NewProjectModal({ editId, onClose }) {
               <Input value={r.name} placeholder={`Milestone ${i + 1}`} aria-label={`Milestone ${i + 1} name`} onChange={(e) => setMs(r.key, { name: e.target.value })} />
               <Input type="date" value={r.due} aria-label={`Milestone ${i + 1} due date`} onChange={(e) => setMs(r.key, { due: e.target.value, auto: false })} />
               <Input type="number" min="0" step="1" value={r.hours} placeholder="0" aria-label={`Milestone ${i + 1} hours`} onChange={(e) => setMs(r.key, { hours: e.target.value })} />
-              <button type="button" className={s.removeBtn} aria-label={`Remove milestone ${i + 1}`} onClick={() => removeMs(r.key)}>
-                ✕
-              </button>
+              {r.cr || loggedOn(r.id) ? (
+                <span className={s.removeBtn} title={r.cr ? 'Change-request milestone — can’t be removed' : 'Hours are logged on this milestone — it can’t be removed'}>🔒</span>
+              ) : (
+                <button type="button" className={s.removeBtn} aria-label={`Remove milestone ${i + 1}`} onClick={() => removeMs(r.key)}>
+                  ✕
+                </button>
+              )}
             </div>
           ))}
           <button type="button" className={s.addBtn} onClick={addMs}>
             + Add milestone
           </button>
-          <span className={s.note}>The project budget is the total of these hours. You can rename, re-date, add or remove milestones later too.</span>
+          {overBy > 0 && (
+            <div className={s.overAlert} role="alert">
+              Milestone hours are {overBy}h more than the budget ({msTotal}h of {budgetN}h). Reduce the hours or raise the budget.
+            </div>
+          )}
+          {budgetN > 0 && overBy < 0 && msTotal > 0 && (
+            <div className={s.underNote}>
+              {-overBy}h of the budget is not assigned to a milestone yet.
+            </div>
+          )}
+          <span className={s.note}>
+            {budgetN > 0 ? 'Use “Distribute budget” to split it, or type hours per milestone.' : 'Without a budget, the milestone hours add up to the project budget.'}
+            {isEdit ? ' Team, links and documents are edited in the project panel.' : ' You can rename, re-date, add or remove milestones later too.'}
+          </span>
         </div>
-        </>
-        )}
-        {isEdit && (
-          <div className={`${s.full} ${s.note}`}>
-            Budget hours come from the milestones; team, links and documents are edited in the project panel.
-          </div>
-        )}
         {err && <ErrorText className={s.full}>{err}</ErrorText>}
       </div>
     </Modal>

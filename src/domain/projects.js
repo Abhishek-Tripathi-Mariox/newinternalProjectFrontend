@@ -153,7 +153,7 @@ export function buildProjectsModel(S, pj, now = serverNow()) {
   /** Budget, progress and health of a project. */
   const info = (p) => {
     const ms = msOf[p.id] || [];
-    const budget = ms.reduce((x, m) => x + (+m.alloc || 0), 0);
+    const budget = p.budgetHours != null ? +p.budgetHours : ms.reduce((x, m) => x + (+m.alloc || 0), 0);
     const used = g(`p:${p.id}`).all;
     const curM = ms.find((m) => m.status !== 'Done');
     const ci = curM ? ms.indexOf(curM) : ms.length;

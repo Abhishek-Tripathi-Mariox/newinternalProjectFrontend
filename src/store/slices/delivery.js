@@ -85,15 +85,63 @@ export const createDeliverySlice = (set, get) => {
       });
       if (m.start !== toDay(p.start)) patch.start = m.start;
       if (m.due !== toDay(p.due)) patch.due = m.due;
-      if (!Object.keys(patch).length) { set({ modal: null }); return undefined; }
-      try {
+      const oldBudget = p.budgetHours != null ? +p.budgetHours : get().milestones.filter((x) => x.p === id).reduce((x, y) => x + (+y.alloc || 0), 0);
+      if (m.budget !== undefined && m.budget !== '' && Math.max(0, +m.budget || 0) !== oldBudget) patch.budgetHours = Math.max(0, +m.budget || 0);
+      const budgetDown = patch.budgetHours !== undefined && patch.budgetHours < oldBudget;
+      // Milestones typed in the form: [{id?, name, due 'YYYY-MM-DD', hours}] — diff against the store.
+      const rows = m.ms || null;
+      if (rows) {
+        const noDate = rows.findIndex((r) => !r.due);
+        if (noDate >= 0) return `Pick a due date for milestone ${noDate + 1}.`;
+      }
+      const before = get().milestones.filter((x) => x.p === id);
+      const msOps = [];
+      if (rows) {
+        before.filter((x) => !rows.some((r) => r.id === x.id)).forEach((x) => msOps.push(() => api.del(`/milestones/${x.id}`)));
+        rows.forEach((r, i) => {
+          const name = (r.name || '').trim() || `Milestone ${i + 1}`;
+          const hours = Math.max(0, +r.hours || 0);
+          const old = r.id && before.find((x) => x.id === r.id);
+          if (old) {
+            const b = {};
+            if (name !== old.name) b.name = name;
+            if (hours !== (+old.alloc || 0)) b.allocHours = hours;
+            if (r.due !== toDay(old.due)) b.dueDate = r.due;
+            if (Object.keys(b).length) msOps.push(() => api.patch(`/milestones/${old.id}`, b));
+          } else if (!r.id) {
+            msOps.push(() => api.post(`/projects/${id}/milestones`, { name, dueDate: r.due, allocHours: hours }));
+          }
+        });
+      }
+      if (!Object.keys(patch).length && !msOps.length) { set({ modal: null }); return undefined; }
+      const saveProject = async () => {
+        if (!Object.keys(patch).length) return;
         const body = toApiProjectPatch(patch);
         if (patch.start) body.startDate = patch.start;
         if (patch.due) body.dueDate = patch.due;
         mergeProject(await api.patch(`/projects/${id}`, body));
+      };
+      // Raising the budget goes first (so bigger milestones fit); lowering it goes after the milestones shrink.
+      let msErr = '';
+      const runMs = async () => {
+        for (const op of msOps) {
+          try { await op(); } catch (e) { msErr = msErr || msg(e); }
+        }
+      };
+      try {
+        if (budgetDown) { await runMs(); await saveProject(); } else { await saveProject(); await runMs(); }
       } catch (e) {
+        if (msOps.length) resyncDelivery();
         return msg(e);
       }
+      if (msOps.length) {
+        try {
+          const fresh = (await api.get(`/projects/${id}/milestones`)) || [];
+          const list = (Array.isArray(fresh) ? fresh : fresh.items || []).map(fromApiMilestone);
+          set((s) => ({ milestones: s.milestones.filter((x) => x.p !== id).concat(list) }));
+        } catch { resyncDelivery(); }
+      }
+      if (msErr) return `Project saved, but a milestone change failed: ${msErr}`;
       set({ modal: null });
       get().flash(`Project updated · ${String(m.name).trim()}`);
       return undefined;

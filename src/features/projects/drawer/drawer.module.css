@@ -136,3 +136,10 @@
 .msAdd { display: grid; grid-template-columns: minmax(0, 1fr) 150px 80px auto auto; gap: 8px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--row-line); }
 .msAddErr { grid-column: 1 / -1; }
 @media (max-width: 560px) { .msAdd { grid-template-columns: 1fr 1fr; } }
+.msOver {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 8px 0 4px; padding: 9px 12px; border-radius: 8px;
+  font-size: 12.5px; font-weight: 500; color: oklch(0.45 0.17 25); background: oklch(0.97 0.025 25); border: 1px solid oklch(0.88 0.06 25);
+}
+.msOver > span { flex: 1 1 240px; }
+.msOverBtn { border: 1px solid oklch(0.8 0.08 25); background: #fff; color: oklch(0.45 0.17 25); border-radius: 6px; padding: 4px 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.msOverClose { border: 0; background: transparent; color: oklch(0.55 0.1 25); cursor: pointer; font-size: 12px; }

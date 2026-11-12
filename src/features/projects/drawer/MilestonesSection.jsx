@@ -19,6 +19,17 @@ export default function MilestonesSection({ project: sp, info: I, model }) {
   const [draft, setDraft] = useState(null); // { name, due, hours } while adding
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [overMsg, setOverMsg] = useState('');
+  const openModal = useStore((st) => st.openModal);
+  const hasBudget = sp.budgetHours != null;
+  /** Would these milestone hours (one milestone changed / one added) go over the project budget? */
+  const overBudget = (extra, exceptId) => {
+    if (!hasBudget) return '';
+    const total = I.ms.filter((m) => m.id !== exceptId).reduce((x, m) => x + (+m.alloc || 0), 0) + (+extra || 0);
+    return total > +sp.budgetHours + 1e-9
+      ? `Milestone hours would be ${hh(total)} — more than the project budget (${hh(+sp.budgetHours)}). Increase the project hours first.`
+      : '';
+  };
   const { logs, members } = useScoped();
   const isPM = useIsPM();
   const canEdit = isPM(sp);
@@ -29,9 +40,15 @@ export default function MilestonesSection({ project: sp, info: I, model }) {
     (id, patch) => {
       // Status is open to everyone; name / allocation are PM only (original behaviour).
       if (('name' in patch || 'alloc' in patch || 'due' in patch) && !canEdit) return;
+      if ('alloc' in patch) {
+        const over = overBudget(patch.alloc, id);
+        setOverMsg(over);
+        if (over) return;
+      }
       updMs(id, patch);
     },
-    [canEdit, updMs],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canEdit, updMs, I.ms, sp.budgetHours],
   );
   const onToggle = useCallback((id) => setPj({ exp: exp === `ms:${id}` ? null : `ms:${id}`, exp2: null }), [exp, setPj]);
   const onToggleMember = useCallback((id) => setPj({ exp2: id }), [setPj]);
@@ -40,6 +57,8 @@ export default function MilestonesSection({ project: sp, info: I, model }) {
   const startAdd = () => { setErr(''); setDraft({ name: '', due: sp.due ? ymd(sp.due) : '', hours: '' }); };
   const saveAdd = async () => {
     if (busy) return;
+    const over = overBudget(draft.hours);
+    if (over) { setErr(over); return; }
     setBusy(true);
     const e = await addMs(sp.id, draft);
     setBusy(false);
@@ -52,9 +71,20 @@ export default function MilestonesSection({ project: sp, info: I, model }) {
     <section>
       <SectionTitle
         title="Milestones"
-        sub={`${done} of ${I.ms.length} done · ${hh(I.budget)} allocated`}
+        sub={`${done} of ${I.ms.length} done · ${hh(I.ms.reduce((x, m) => x + (+m.alloc || 0), 0))} of ${hh(I.budget)} budget allocated`}
         action={canEdit && !draft ? <Button size="sm" onClick={startAdd}>+ Add milestone</Button> : null}
       />
+      {overMsg && (
+        <div className={s.msOver} role="alert">
+          <span>{overMsg}</span>
+          {canEdit && (
+            <button type="button" className={s.msOverBtn} onClick={() => { setOverMsg(''); openModal('proj', { editId: sp.id }); }}>
+              Edit project hours
+            </button>
+          )}
+          <button type="button" className={s.msOverClose} aria-label="Dismiss" onClick={() => setOverMsg('')}>✕</button>
+        </div>
+      )}
       {I.ms.map((m) => (
         <MilestoneRow
           key={m.id}

@@ -11,6 +11,7 @@ import { BUG_STATUS_KEYS } from './workItems';
 import { downloadDoc, openDoc, useFileUrl } from '@/api/files';
 import { useAttach } from './hooks/useAttach';
 import s from './WorkModals.module.css';
+import { serverNow } from '@/lib/clock';
 
 const SEVERITIES = Object.keys(BUG_SEVERITY);
 const ACCEPT = 'image/*,video/*,.pdf,.txt,.log,.json,.zip,.doc,.docx,.xls,.xlsx,.csv';
@@ -21,7 +22,7 @@ function initialForm(bug, pre, projects, milestones) {
   const p = projects.find((x) => x.id === pre.p) || projects.find((x) => x.status === 'Running') || projects[0] || {};
   return {
     title: '', p: p.id || '', ms: p.id ? curMs(milestones, p.id) : '', dept: 'Web', env: 'Web', sev: 'Major', prio: 'High', a: '', st: 'Open', rep: 'dn',
-    repDate: ymd(Date.now()), due: ymd(Date.now() + 3 * DAY), build: '', steps: '', exp: '', act: '', link: '', atts: [],
+    repDate: ymd(serverNow()), due: ymd(serverNow() + 3 * DAY), build: '', steps: '', exp: '', act: '', link: '', atts: [],
   };
 }
 
@@ -86,7 +87,7 @@ export default function BugModal({ editId, p, onClose }) {
     const v = e.target.value;
     setForm((f) => ({
       ...f, sev: v, prio: v === 'Critical' ? 'High' : f.prio,
-      ...(isEdit ? {} : { due: ymd((parseDay(f.repDate) || Date.now()) + BUG_SEVERITY_DAYS[v] * DAY) }),
+      ...(isEdit ? {} : { due: ymd((parseDay(f.repDate) || serverNow()) + BUG_SEVERITY_DAYS[v] * DAY) }),
     }));
   };
   const addFiles = (files) => attach(files, (atts) => setForm((f) => ({ ...f, atts: (f.atts || []).concat(atts) })));
@@ -129,7 +130,7 @@ export default function BugModal({ editId, p, onClose }) {
       onClose={onClose}
       width={720}
       title={isEdit ? `${editId} · ${bug ? bug.title : ''}` : 'Report a bug'}
-      sub={isEdit ? `Reported ${fd(bug ? bug.repDate : Date.now())}` : 'Log the issue with enough detail for the developer to reproduce it'}
+      sub={isEdit ? `Reported ${fd(bug ? bug.repDate : serverNow())}` : 'Log the issue with enough detail for the developer to reproduce it'}
       footer={(
         <div className={s.footer}>
           <div>{isEdit && <Button variant="dangerOutline" onClick={del} disabled={busy}>Delete bug</Button>}</div>

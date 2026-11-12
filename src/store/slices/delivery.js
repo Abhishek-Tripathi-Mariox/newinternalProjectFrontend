@@ -1,16 +1,25 @@
 import { dLabel, parseDay } from '@/lib/date';
 import { attachedMessage } from '@/domain/files';
-import { api, openPrint } from '@/api/client';
+import { api, openPrint, toDay } from '@/api/client';
 import { optimistic } from '@/api/optimistic';
 import { fromApiDoc, isPending, pendingFiles, syncDocs, uploadPending } from '@/api/files';
 import {
   exportLogs, fromApiBug, fromApiCr, fromApiLog, fromApiMilestone, fromApiProject, fromApiTask,
-  toApiBug, toApiCr, toApiLogs, toApiMilestonePatch, toApiProject, toApiProjectPatch, toApiTask,
+  toApiBug, toApiCr, toApiLogs, toApiMilestonePatch, toApiProject, toApiProjectPatch, toApiTask, fromApiPfu, toApiPfu,
 } from '@/api/delivery';
 import { mapById, patchById, memberName } from '../helpers';
+import { serverNow } from '@/lib/clock';
 
 const LINK_OK = /^https?:\/\//i;
 const msg = (e) => (e && e.message) || 'Something went wrong — try again';
+/** Server's client-email result (CLIENT_EMAILS) → flash suffix. Says nothing when client emails are off. */
+const clientMailNote = (r) => {
+  if (!r) return '';
+  if (r.sent) return ` · emailed to ${r.to}`;
+  if (r.reason === 'no-email') return ' · no email sent (add the client email to the project)';
+  if (r.reason === 'failed') return ' · the email to the client failed';
+  return '';
+};
 /** Replace by id, or append. */
 const upsert = (arr, item) => ((arr || []).some((x) => x.id === item.id) ? arr.map((x) => (x.id === item.id ? item : x)) : (arr || []).concat(item));
 const replaceMany = (arr, items) => items.reduce((a, x) => upsert(a, x), arr || []);
@@ -56,6 +65,41 @@ export const createDeliverySlice = (set, get) => {
       async () => { const dto = await api.patch(`/projects/${id}`, toApiProjectPatch(patch)); mergeProject(dto); return dto; }),
 
     /**
+     * Save the "Edit project" form. Sends only the fields that changed; returns an error message or undefined.
+     * Budget comes from the milestones, and team / links / documents are edited in the drawer itself.
+     */
+    async editProj(id, m) {
+      const p = projectOf(id);
+      if (!p) return 'Project not found.';
+      if (!String(m.name || '').trim()) return 'Enter a project name.';
+      if (!String(m.client || '').trim()) return 'Enter the client name.';
+      if (!String(m.service || '').trim()) return 'Pick at least one service.';
+      if (!m.start || !m.due) return 'Pick a start date and a due date.';
+      if (m.due < m.start) return 'The due date must be on or after the start date.';
+      const next = { ...m, value: +m.value || 0 };
+      const patch = {};
+      if (m.clientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.clientEmail.trim())) return 'Enter a valid client email.';
+      ['name', 'client', 'clientEmail', 'service', 'status', 'pm', 'value', 'prio', 'brief'].forEach((k) => {
+        const v = typeof next[k] === 'string' ? next[k].trim() : next[k];
+        if (v !== (p[k] ?? '')) patch[k] = v;
+      });
+      if (m.start !== toDay(p.start)) patch.start = m.start;
+      if (m.due !== toDay(p.due)) patch.due = m.due;
+      if (!Object.keys(patch).length) { set({ modal: null }); return undefined; }
+      try {
+        const body = toApiProjectPatch(patch);
+        if (patch.start) body.startDate = patch.start;
+        if (patch.due) body.dueDate = patch.due;
+        mergeProject(await api.patch(`/projects/${id}`, body));
+      } catch (e) {
+        return msg(e);
+      }
+      set({ modal: null });
+      get().flash(`Project updated · ${String(m.name).trim()}`);
+      return undefined;
+    },
+
+    /**
      * Create a project from the new-project form
      * `{name, client, service, status, pm, start, due, budget, team[], value, prio, brief, links[{type,url}], atts}`.
      * The server generates the five template milestones and splits the budget across the team.
@@ -63,6 +107,10 @@ export const createDeliverySlice = (set, get) => {
     async saveProj(m) {
       const bad = (m.links || []).find((l) => l.url.trim() && !LINK_OK.test(l.url.trim()));
       if (bad) return `Links must start with https:// (check the ${bad.type} link).`;
+      const noDate = (m.ms || []).findIndex((r) => !r.due);
+      if (noDate >= 0) return `Pick a due date for milestone ${noDate + 1}.`;
+      const early = (m.ms || []).findIndex((r) => m.start && r.due < m.start);
+      if (early >= 0) return `Milestone ${early + 1} is due before the project starts.`;
       let dto;
       try {
         dto = await api.post('/projects', toApiProject(m));
@@ -129,6 +177,118 @@ export const createDeliverySlice = (set, get) => {
     /* ───────────── Milestones ───────────── */
 
     /** Milestone edit `{name, alloc, status, due}` — status at once, typing debounced. */
+    /* ───────────── Project third parties & credentials ───────────── */
+
+    /** Load a project's third parties → integ[pid] = {items, canManage, canReveal, credentialsEnabled}. */
+    async loadInteg(pid) {
+      try {
+        const r = await api.get('/project-integrations', { projectId: pid });
+        set((s) => ({ integ: { ...s.integ, [pid]: r } }));
+      } catch (e) {
+        set((s) => ({ integ: { ...s.integ, [pid]: { items: [], error: msg(e) } } }));
+      }
+    },
+    /** Create / edit from the modal form {name, category, status, url, notes, creds:[{id?, label, env, value}]}. */
+    async saveInteg(pid, m, editId) {
+      if (!m.name.trim()) return 'Enter the third party name.';
+      if (m.url.trim() && !LINK_OK.test(m.url.trim())) return 'The link must start with https://';
+      const creds = (m.creds || []).filter((c) => c.id || c.label.trim() || c.value);
+      const noLabel = creds.find((c) => !c.label.trim());
+      if (noLabel) return 'Name each credential (e.g. API key, Password).';
+      const noValue = creds.find((c) => !c.id && !c.value);
+      if (noValue) return `Enter a value for "${noValue.label.trim()}".`;
+      const body = {
+        name: m.name.trim(), category: m.category, status: m.status, url: m.url.trim(), notes: m.notes || '',
+        credentials: creds.map((c) => ({ ...(c.id ? { id: c.id } : {}), label: c.label.trim(), env: c.env, value: c.value || '' })),
+      };
+      try {
+        const dto = editId ? await api.patch(`/project-integrations/${editId}`, body) : await api.post('/project-integrations', { projectId: pid, ...body });
+        set((s) => {
+          const cur = s.integ[pid] || { items: [] };
+          return { modal: null, integ: { ...s.integ, [pid]: { ...cur, items: upsert(cur.items, dto) } } };
+        });
+        get().flash(editId ? `${dto.name} updated` : `${dto.name} added`);
+        return undefined;
+      } catch (e) {
+        return msg(e);
+      }
+    },
+    async delInteg(pid, id) {
+      try {
+        await api.del(`/project-integrations/${id}`);
+        set((s) => {
+          const cur = s.integ[pid] || { items: [] };
+          return { integ: { ...s.integ, [pid]: { ...cur, items: cur.items.filter((x) => x.id !== id) } } };
+        });
+        get().flash('Third party removed');
+      } catch (e) {
+        get().flash(msg(e));
+      }
+    },
+    /** Decrypt one credential (server logs the view). Resolves to the value, or null (error flashed). */
+    async revealCred(id, credId) {
+      try {
+        return (await api.post(`/project-integrations/${id}/credentials/${credId}/reveal`)).value;
+      } catch (e) {
+        get().flash(msg(e));
+        return null;
+      }
+    },
+
+    /* ───────────── Project follow-ups ───────────── */
+
+    /** Create / edit a project follow-up from its modal form. Returns an error message or undefined. */
+    async savePfu(m, editId) {
+      if (!m.pid) return 'Pick a project.';
+      if (!m.title.trim()) return 'Add a title.';
+      if (!m.date || !m.time) return 'Pick a date and time.';
+      let saved;
+      try {
+        const body = toApiPfu(m);
+        saved = fromApiPfu(editId ? await api.patch(`/project-follow-ups/${editId}`, body) : await api.post('/project-follow-ups', body));
+      } catch (e) {
+        return msg(e);
+      }
+      set((s) => ({ pfus: upsert(s.pfus, saved), modal: null }));
+      get().flash(editId ? 'Follow-up updated' : `${m.type} scheduled · ${dLabel(saved.due)}`);
+      return undefined;
+    },
+    async togglePfu(id) {
+      const res = await optimistic(set, get, (s) => ({ pfus: mapById(s.pfus, id, (f) => ({ ...f, done: !f.done })) }), () => api.patch(`/project-follow-ups/${id}/toggle-done`));
+      if (res) set((s) => ({ pfus: upsert(s.pfus, fromApiPfu(res)) }));
+    },
+    async delPfu(id) {
+      const ok = await optimistic(set, get, (s) => ({ pfus: s.pfus.filter((f) => f.id !== id) }), () => api.del(`/project-follow-ups/${id}`).then(() => true));
+      if (ok) get().flash('Follow-up deleted');
+    },
+
+    /** Add a milestone at the end of a project (PM). Returns an error message or undefined. */
+    async addMs(pid, { name, due, hours }) {
+      if (!due) return 'Pick a due date.';
+      try {
+        const dto = await api.post(`/projects/${pid}/milestones`, { name: (name || '').trim(), dueDate: due, allocHours: Math.max(0, +hours || 0) });
+        set((s) => ({ milestones: upsert(s.milestones, fromApiMilestone(dto)) }));
+        get().flash(`Milestone added · ${dto.name}`);
+        return undefined;
+      } catch (e) {
+        return msg(e);
+      }
+    },
+
+    /** Delete a milestone (PM; refused by the server once hours are logged on it). */
+    async delMs(mid) {
+      const m = get().milestones.find((x) => x.id === mid);
+      try {
+        const r = await api.del(`/milestones/${mid}`);
+        const pid = m ? m.p : null;
+        const fresh = (r.milestones || []).map(fromApiMilestone);
+        set((s) => ({ milestones: s.milestones.filter((x) => x.id !== mid && x.p !== pid).concat(fresh) }));
+        get().flash(`Milestone deleted${m ? ` · ${m.name}` : ''}`);
+      } catch (e) {
+        get().flash(msg(e));
+      }
+    },
+
     updMs(id, patch) {
       set((s) => ({ milestones: patchById(s.milestones, id, patch) }));
       const send = () => api.patch(`/milestones/${id}`, toApiMilestonePatch(patch)).catch((e) => { get().flash(msg(e)); resyncDelivery(); });
@@ -210,7 +370,7 @@ export const createDeliverySlice = (set, get) => {
       try {
         const r = await api.post(`/public/portal/${token}/milestones/${mid}/decision`, { approve: !!ok, note: n });
         set((s) => ({
-          milestones: patchById(s.milestones, mid, { status: r.status, appr: { ...(m.appr || {}), st: r.approval, at: Date.now(), note: n } }),
+          milestones: patchById(s.milestones, mid, { status: r.status, appr: { ...(m.appr || {}), st: r.approval, at: serverNow(), note: n } }),
           pj: { ...s.pj, cNote: { ...s.pj.cNote, [mid]: '' } },
         }));
         get().flash(r.message || (ok ? 'Milestone approved' : 'Change request sent to the team'));
@@ -386,6 +546,7 @@ export const createDeliverySlice = (set, get) => {
       } catch (e) {
         return msg(e);
       }
+      const mailNote = clientMailNote(dto.clientEmail);
       let upErr = '';
       try {
         await syncDocs(`/change-requests/${dto.id}/documents`, old ? old.docs : [], m.atts);
@@ -397,7 +558,8 @@ export const createDeliverySlice = (set, get) => {
       } catch { /* keep what we have */ }
       if (dto.projectId) mergeCr(dto);
       set({ modal: null });
-      const base = dto.id + (send ? ' sent to client for approval' : old ? ' saved' : ' saved as draft');
+      const resent = send && old && old.status === 'Sent to client';
+      const base = dto.id + (resent ? ` updated and re-sent to client${mailNote}` : send ? ` sent to client for approval${mailNote}` : old ? ' saved' : ' saved as draft');
       get().flash(upErr ? `${base} · files: ${upErr}` : base);
       return undefined;
     },

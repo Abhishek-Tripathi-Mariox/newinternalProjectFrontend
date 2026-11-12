@@ -4,6 +4,7 @@ import { useNow } from '@/hooks/useNow';
 import { clock, fmtDur } from '@/lib/date';
 import { useSession } from './useSession';
 import s from './Banners.module.css';
+import { serverNow } from '@/lib/clock';
 
 /** Amber "You're on lunch break" banner with elapsed time, plan progress and resume button. */
 export default function BreakBanner() {
@@ -16,7 +17,7 @@ export default function BreakBanner() {
 
   // `tick` only drives the 15 s refresh; it can predate a break that just started, which made the
   // elapsed time negative and the progress bar render full. Read the clock fresh, like the original.
-  const now = Math.max(tick, Date.now());
+  const now = Math.max(tick, serverNow());
   const el = Math.max(0, now - a.brk);
   const pl = (a.brkPlan || 0) * 6e4;
   const over = !!pl && el > pl;

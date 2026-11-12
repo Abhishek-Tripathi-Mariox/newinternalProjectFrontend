@@ -7,12 +7,13 @@ import { cx } from '@/components/ui/cx';
 import MyDayPopover from './MyDayPopover';
 import { dayEvents } from './dayEvents';
 import s from './Header.module.css';
+import { serverNow } from '@/lib/clock';
 
 /** Status pill (▾ My day), Check in, Break / End break, End shift — for the signed-in team member. */
 export default function SessionControls({ pid, now: tick }) {
   // `tick` (from the header) only schedules refreshes; read the clock fresh so "On break · Xm"
   // and My day are right the moment a break starts or ends.
-  const now = Math.max(tick, Date.now());
+  const now = Math.max(tick, serverNow());
   const { live, attLog } = useStore(useShallow((x) => ({ live: x.live, attLog: x.attLog })));
   const checkIn = useStore((x) => x.checkIn);
   const myBreak = useStore((x) => x.myBreak);

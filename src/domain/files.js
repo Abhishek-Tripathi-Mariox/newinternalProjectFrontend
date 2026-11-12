@@ -1,4 +1,5 @@
 /** Attachments: kind detection and reading browser File objects into storable records. */
+import { serverNow } from '@/lib/clock';
 
 /** Max upload size; larger files are skipped. */
 export const MAX_FILE = 10 * 1048576;
@@ -28,7 +29,7 @@ export async function readFiles(list) {
   const files = Array.from(list || []);
   const skipped = files.filter((f) => f.size > MAX_FILE).length;
   const atts = await Promise.all(files.filter((f) => f.size <= MAX_FILE).map((f) => new Promise((res) => {
-    const base = { name: f.name, size: f.size, type: f.type || '', at: Date.now() };
+    const base = { name: f.name, size: f.size, type: f.type || '', at: serverNow() };
     if (f.size > MAX_STORED) return res({ ...base, url: '' });
     const rd = new FileReader();
     rd.onload = () => res({ ...base, url: rd.result });

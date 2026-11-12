@@ -65,7 +65,7 @@ export const BREAK_TYPES = [['Lunch', 45], ['Tea / coffee', 15], ['Personal', 15
 
 export const MILESTONE_TEMPLATE = {
   fractions: [0.15, 0.3, 0.3, 0.15, 0.1],
-  names: ['Discovery & UI/UX', 'Development · Phase 1', 'Development · Phase 2', 'QA & UAT', 'Launch & handover'],
+  names: ['Feature List', 'UI/UX Milestone 1', 'Frontend Milestone 2', 'Backend Milestone 3', 'QA, Third Party, Go Live - Milestone 4'],
 };
 
 export const LINK_TYPES = ['Figma', 'Prototype', 'Google Drive', 'Repository', 'Staging URL', 'Live URL', 'Jira / tracker', 'Other'];

@@ -10,6 +10,7 @@ import {
 } from '@/api/sales';
 import { mapById, ownerName } from '../helpers';
 import { firstOwnerId } from '@/store/owners';
+import { serverNow } from '@/lib/clock';
 
 /** Insert or replace an item by id. */
 const upsert = (arr, item, { prepend = false } = {}) => (arr.some((x) => x.id === item.id)
@@ -58,10 +59,10 @@ export const createSalesSlice = (set, get) => {
         leads: s.leads.map((x) => {
           if (x.id !== id) return x;
           const n = { ...x, [k]: v };
-          if (k === 'status') n.acts = (x.acts || []).concat({ t: Date.now(), kind: 'status', text: `Stage: ${x.status} → ${v}` });
+          if (k === 'status') n.acts = (x.acts || []).concat({ t: serverNow(), kind: 'status', text: `Stage: ${x.status} → ${v}` });
           if (k === 'owner') {
             n.firstOwner = x.firstOwner || x.owner;
-            n.acts = (x.acts || []).concat({ t: Date.now(), kind: 'owner', text: `Transferred ${ownerName(x.owner)} → ${ownerName(v)}` });
+            n.acts = (x.acts || []).concat({ t: serverNow(), kind: 'owner', text: `Transferred ${ownerName(x.owner)} → ${ownerName(v)}` });
           }
           return n;
         }),
@@ -79,7 +80,7 @@ export const createSalesSlice = (set, get) => {
     async logAct(id, kind, text) {
       const acts = await optimistic(
         set, get,
-        (s) => ({ leads: mapById(s.leads, id, (l) => ({ ...l, acts: (l.acts || []).concat({ t: Date.now(), kind, text }) })) }),
+        (s) => ({ leads: mapById(s.leads, id, (l) => ({ ...l, acts: (l.acts || []).concat({ t: serverNow(), kind, text }) })) }),
         () => salesApi.addActivity(id, kind, text),
       );
       if (acts) set((s) => ({ leads: mapById(s.leads, id, (l) => ({ ...l, acts: acts.map(fromApiActivity).sort((a, b) => a.t - b.t) })) }));
@@ -89,7 +90,7 @@ export const createSalesSlice = (set, get) => {
     async bulk(k, v) {
       const ids = get().selIds;
       if (!v || !ids.length) return;
-      const now = Date.now();
+      const now = serverNow();
       const res = await optimistic(set, get, (s) => ({
         leads: s.leads.map((l) => {
           if (!ids.includes(l.id) || l[k] === v) return l;
@@ -217,7 +218,7 @@ export const createSalesSlice = (set, get) => {
 
     /** Mark a quote Viewed / Accepted / Declined. Accepting wins the lead at the quote's net value. */
     async setQuote(lid, qid, st) {
-      const now = Date.now();
+      const now = serverNow();
       const k = { Viewed: 'viewedAt', Accepted: 'acceptedAt', Declined: 'declinedAt' }[st];
       const res = await optimistic(set, get, (s) => ({
         leads: mapById(s.leads, lid, (l) => ({ ...l, quotes: (l.quotes || []).map((x) => (x.id === qid ? { ...x, status: st, [k]: now } : x)) })),

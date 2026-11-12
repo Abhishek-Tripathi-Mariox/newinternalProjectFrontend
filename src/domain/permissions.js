@@ -7,7 +7,7 @@
 export const MODULE_OF_TAB = { overview: 'projects', projects: 'projects', milestones: 'projects', tasks: 'tasks', bugs: 'bugs', team: 'team', cap: 'team', cr: 'projects', ts: 'ts' };
 
 /** Route path → permission module (null = CEO-only page, hidden while previewing). */
-export const MODULE_OF_PATH = { '/live': null, '/attendance': null, '/reports': null, '/dashboard': 'dash', '/leads': 'leads', '/follow-ups': 'fu', '/lead-setup': 'leads', '/projects': 'projects', '/users': 'users' };
+export const MODULE_OF_PATH = { '/live': null, '/attendance': null, '/reports': null, '/dashboard': 'dash', '/leads': 'leads', '/follow-ups': 'fu', '/lead-setup': 'leads', '/projects': 'projects', '/project-follow-ups': 'projects', '/users': 'users' };
 
 /** Person id used by live/attendance/logs: member id, sales owner id, or the bare user id. */
 export const pidOf = (u) => (u ? u.memberId || u.ownerId || u.id.replace(/^u-/, '') : null);
@@ -90,6 +90,7 @@ export function scopeState(S) {
   const byP = (x) => vp.has(x.p);
   lim('milestones', byP);
   lim('crs', byP);
+  lim('pfus', (x) => !cli && byP(x));
   lim('tasks', (t) => byP(t) && who('tasks', t.a));
   lim('bugs', (b) => byP(b) && (cli || sc('bugs') === 'all' || who('bugs', b.a) || b.rep === pid));
   lim('logs', (l) => byP(l) && who('ts', l.m));

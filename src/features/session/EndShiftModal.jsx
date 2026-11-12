@@ -7,6 +7,8 @@ import { useEndShiftModel, hoursState, hx } from './useEndShiftModel';
 import s from './EndShiftModal.module.css';
 
 const EMPTY_ROW = { p: '', ms: '', h: '', note: '' };
+const INTERNAL_CATS = ['Meeting', 'Learning / training', 'Code review', 'Internal tool / R&D', 'Hiring / interviews', 'Helping the team', 'Admin / documentation', 'Other'];
+const EMPTY_INTERNAL = { cat: 'Meeting', h: '', note: '' };
 const PM_STATUSES = ['On track', 'At risk', 'Blocked'];
 
 /** Section heading with a muted sub-line. */
@@ -19,12 +21,10 @@ function SectionHead({ title, sub }) {
   );
 }
 
-/** Project / milestone / hours / note rows with live total vs. shift. */
+/** Project / milestone / hours / note rows. */
 function DeliveryHours({ rows, setRows, m }) {
   const setRow = (i, patch) => setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   const remove = (i) => setRows(rows.length > 1 ? rows.filter((_, j) => j !== i) : [{ ...EMPTY_ROW }]);
-  const total = rows.reduce((x, r) => x + (+r.h || 0), 0);
-  const st = hoursState(total, m.shift, m.workedH);
 
   return (
     <div className={s.section}>
@@ -50,18 +50,55 @@ function DeliveryHours({ rows, setRows, m }) {
         </div>
       ))}
       <button type="button" className={s.addRow} onClick={() => setRows(rows.concat({ ...EMPTY_ROW }))}>+ Add project</button>
-      <div className={`${s.totalBox} ${st.over ? s.totalBoxOver : ''}`}>
-        <div className={s.totalLine}>
-          <span><span className={s.totalH}>{hx(total)}</span> <span className={s.muted}>of {m.shift}h shift</span></span>
-          <span className={s.state} style={{ color: st.color }}>{st.label}</span>
+    </div>
+  );
+}
+
+/** Internal (non-project) work: category / hours / what was done. */
+function InternalWork({ rows, setRows }) {
+  const setRow = (i, patch) => setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  return (
+    <div className={s.section}>
+      <SectionHead title="Internal work" sub="Time not spent on a client project — meetings, learning, reviews, hiring, internal tools…" />
+      {rows.length > 0 && <div className={`${s.internalGrid} ${s.hoursHead}`}><span>Type</span><span>Hours</span><span>What did you do?</span><span /></div>}
+      {rows.map((r, i) => (
+        <div key={i} className={s.internalGrid}>
+          <Select value={r.cat} options={INTERNAL_CATS} onChange={(e) => setRow(i, { cat: e.target.value })} aria-label="Internal work type" />
+          <Input
+            className={s.hoursInput}
+            type="number" min="0" max="24" step="0.25" placeholder="0"
+            value={r.h}
+            aria-label="Internal work hours"
+            onChange={(e) => setRow(i, { h: e.target.value })}
+          />
+          <Input value={r.note} placeholder="e.g. Sprint planning with the team, interviewed 2 candidates" aria-label="What did you do" onChange={(e) => setRow(i, { note: e.target.value })} />
+          <IconButton variant="plain" label="Remove row" onClick={() => setRows(rows.filter((_, j) => j !== i))} />
         </div>
-        <div className={s.track}><div className={s.fill} style={{ width: `${Math.min(100, (total / m.shift) * 100).toFixed(1)}%`, background: st.color }} /></div>
-        {st.over && (
-          <div className={s.overMsg}>
-            You worked {m.workedLabel} today. Logged hours can’t exceed time worked (max {hx(Math.floor(m.workedH * 100) / 100)}).
-          </div>
-        )}
+      ))}
+      <button type="button" className={s.addRow} onClick={() => setRows(rows.concat({ ...EMPTY_INTERNAL }))}>+ Add internal work</button>
+    </div>
+  );
+}
+
+/** Live total (project + internal) vs. shift and time worked. */
+function HoursTotal({ projectH, internalH, m }) {
+  const total = projectH + internalH;
+  const st = hoursState(total, m.shift, m.workedH);
+  return (
+    <div className={`${s.totalBox} ${st.over ? s.totalBoxOver : ''}`}>
+      <div className={s.totalLine}>
+        <span>
+          <span className={s.totalH}>{hx(total)}</span> <span className={s.muted}>of {m.shift}h shift</span>
+          {internalH > 0 && <span className={s.muted}> · {hx(projectH)} projects + {hx(internalH)} internal</span>}
+        </span>
+        <span className={s.state} style={{ color: st.color }}>{st.label}</span>
       </div>
+      <div className={s.track}><div className={s.fill} style={{ width: `${Math.min(100, (total / m.shift) * 100).toFixed(1)}%`, background: st.color }} /></div>
+      {st.over && (
+        <div className={s.overMsg}>
+          You worked {m.workedLabel} today. Logged hours can’t exceed time worked (max {hx(Math.floor(m.workedH * 100) / 100)}).
+        </div>
+      )}
     </div>
   );
 }
@@ -101,6 +138,7 @@ export default function EndShiftModal({ onClose, ...initial }) {
     who: pid,
     rows: sales ? [] : (initial.rows && initial.rows.length ? initial.rows : [{ ...EMPTY_ROW }]),
     pmRows: initial.pmRows || [],
+    internalRows: initial.internalRows || [],
   }));
   const [err, setErr] = useState(initial.err || '');
   const [busy, setBusy] = useState(false);
@@ -144,6 +182,12 @@ export default function EndShiftModal({ onClose, ...initial }) {
         {!sales && (
           <>
             <DeliveryHours rows={form.rows} setRows={(rows) => set({ rows })} m={m} />
+            <InternalWork rows={form.internalRows} setRows={(internalRows) => set({ internalRows })} />
+            <HoursTotal
+              projectH={form.rows.reduce((x, r) => x + (+r.h || 0), 0)}
+              internalH={form.internalRows.reduce((x, r) => x + (+r.h || 0), 0)}
+              m={m}
+            />
             {form.pmRows.length > 0 && (
               <PmStatus pmRows={form.pmRows} setPmRows={(pmRows) => set({ pmRows })} projectName={m.projectName} />
             )}

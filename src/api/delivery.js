@@ -29,7 +29,7 @@ export function fromApiProject(p, prev) {
   (p.team || []).forEach((t) => { alloc[t.memberId] = t.allocHours || 0; });
   const docs = Array.isArray(p.documents) ? p.documents.map(fromApiDoc) : (prev && prev.docs) || [];
   return {
-    id: p.id, name: p.name, client: p.client, service: (p.services || []).join(', '), status: p.status, pm: p.pmId, team,
+    id: p.id, name: p.name, client: p.client, clientEmail: p.clientEmail || '', service: (p.services || []).join(', '), status: p.status, pm: p.pmId, team,
     start: dayMs(p.startDate), due: dayMs(p.dueDate), value: p.value || 0, h: p.hue, prio: p.priority || 'Medium', alloc,
     brief: p.brief || '', links: (p.links || []).map((l) => ({ type: l.type, url: l.url })), docs,
     portal: p.portal ? { on: !!p.portal.on, ...(p.portal.token ? { token: p.portal.token } : {}) } : { on: false },
@@ -77,7 +77,7 @@ export const fromApiLog = (l) => ({
 
 /* ───────────── Adapters: store / form → API ───────────── */
 
-const PROJECT_FIELDS = { name: 'name', client: 'client', status: 'status', pm: 'pmId', value: 'value', prio: 'priority', brief: 'brief' };
+const PROJECT_FIELDS = { name: 'name', client: 'client', clientEmail: 'clientEmail', status: 'status', pm: 'pmId', value: 'value', prio: 'priority', brief: 'brief' };
 /** updProj patch → PATCH /projects/:id body. */
 export function toApiProjectPatch(patch) {
   const b = {};
@@ -90,8 +90,12 @@ export function toApiProjectPatch(patch) {
 
 /** New-project form → POST /projects body. */
 export const toApiProject = (m) => ({
-  name: m.name || '', client: m.client || '', services: String(m.service || '').split(',').map((x) => x.trim()).filter(Boolean),
-  status: m.status, pmId: m.pm || undefined, startDate: m.start || '', dueDate: m.due || '', budgetHours: +m.budget || 0, team: m.team || [],
+  name: m.name || '', client: m.client || '', clientEmail: (m.clientEmail || '').trim(), services: String(m.service || '').split(',').map((x) => x.trim()).filter(Boolean),
+  status: m.status, pmId: m.pm || undefined, startDate: m.start || '', dueDate: m.due || '',
+  ...(Array.isArray(m.ms) && m.ms.length
+    ? { milestones: m.ms.map((r) => ({ name: (r.name || '').trim(), dueDate: r.due, allocHours: Math.max(0, +r.hours || 0) })) }
+    : { budgetHours: +m.budget || 0 }),
+  team: m.team || [],
   value: +m.value || 0, priority: m.prio || 'Medium', brief: m.brief || '', links: (m.links || []).map((l) => ({ type: l.type, url: l.url || '' })),
 });
 
@@ -136,6 +140,23 @@ export const toApiCr = (m) => ({
   rate: +m.rate || 0, extraDays: Math.max(0, Math.round(+m.days || 0)), priority: m.prio || 'Medium', target: m.target || 'new',
   team: m.team || [], tasks: (m.tasks || []).map((t) => ({ title: t.t || '', assigneeId: t.a || null, hours: +t.h || 0 })),
 });
+
+/** Project follow-up DTO → store shape (mirrors sales follow-ups: due ms, dur, remind, prio, meet). */
+export const fromApiPfu = (f) => ({
+  id: f.id, p: f.projectId, type: f.type, title: f.title, owner: f.ownerId, due: ms(f.dueAt), dur: f.durationMin || 0,
+  remind: f.remindMin || 0, prio: f.priority, meet: f.meetUrl || '', attendees: f.attendees || '', notes: f.notes || '',
+  done: !!f.done, notified: !!f.notified, createdBy: f.createdBy || null,
+});
+
+/** Project follow-up modal form → API body. */
+export function toApiPfu(m) {
+  const due = new Date(`${m.date}T${m.time}`);
+  return {
+    projectId: m.pid, type: m.type, title: m.title || '', ownerId: m.owner || undefined,
+    dueAt: Number.isNaN(due.getTime()) ? '' : due.toISOString(), durationMin: +m.dur || 0, remindMin: +m.remind || 0,
+    priority: m.prio, meetUrl: m.meet ? (m.meetUrl || '').trim() : '', attendees: m.attendees || '', notes: m.notes || '',
+  };
+}
 
 /** Log-hours form → POST /time-logs body. */
 export const toApiLogs = (m) => ({
@@ -186,13 +207,15 @@ async function fillMissing(rows, has, fetchOne) {
  */
 export async function loadDelivery(me) {
   const vProj = canView(me, 'projects');
-  const [memberRows, projectRows, taskRows, bugRows, crRows, logRows] = await Promise.all([
+  const isClient = !!(me && me.role && me.role.id === 'r-client');
+  const [memberRows, projectRows, taskRows, bugRows, crRows, logRows, pfuRows] = await Promise.all([
     api.get('/members'),
     vProj ? getAll('/projects', { include: 'documents', period: 'all' }) : [],
     canView(me, 'tasks') ? getAll('/tasks') : [],
     canView(me, 'bugs') ? getAll('/bugs', { include: 'events,attachments', quick: 'all', allTime: true }) : [],
     vProj ? optional(getAll('/change-requests', { include: 'history,documents' })) : [],
     canView(me, 'ts') ? optional(getAll('/time-logs')) : [],
+    vProj && !isClient ? optional(getAll('/project-follow-ups')) : [],
   ]);
 
   const [projectsFull, msRows, bugsFull, crsFull] = await Promise.all([
@@ -210,5 +233,6 @@ export async function loadDelivery(me) {
     bugs: bugsFull.map((b) => fromApiBug(b)),
     crs: crsFull.map((c) => fromApiCr(c)),
     logs: (logRows || []).map(fromApiLog),
+    pfus: (pfuRows || []).map(fromApiPfu),
   };
 }

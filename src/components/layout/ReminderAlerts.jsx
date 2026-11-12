@@ -7,27 +7,28 @@ import s from './Banners.module.css';
 
 /** Follow-up reminder cards ("Reminder · in 10 min") raised by store.checkReminders. */
 export default function ReminderAlerts() {
-  const { alerts, fus, leads } = useStore(useShallow((x) => ({ alerts: x.alerts, fus: x.fus, leads: x.leads })));
+  const { alerts, fus, leads, pfus, projects } = useStore(useShallow((x) => ({ alerts: x.alerts, fus: x.fus, leads: x.leads, pfus: x.pfus, projects: x.projects })));
   const dismissAlert = useStore((x) => x.dismissAlert);
   const now = useNow(15000);
 
   const items = useMemo(
     () =>
       (alerts || [])
-        .map((id) => (fus || []).find((f) => f.id === id))
+        .map((id) => (fus || []).find((f) => f.id === id) || (pfus || []).find((f) => f.id === id))
         .filter(Boolean)
         .map((f) => {
-          const l = (leads || []).find((x) => x.id === f.leadId);
+          const p = f.p ? (projects || []).find((x) => x.id === f.p) : null;
+          const l = p || (leads || []).find((x) => x.id === f.leadId);
           const mins = Math.round((f.due - now) / 6e4);
           return {
             id: f.id,
             title: f.title,
             when: mins > 0 ? `in ${mins} min` : mins === 0 ? 'now' : 'started',
-            sub: `${f.type} · ${l ? l.company : 'Internal'} · ${tLabel(f.due)}`,
+            sub: `${f.type} · ${p ? p.name : l ? l.company : 'Internal'} · ${tLabel(f.due)}`,
             meet: f.meet,
           };
         }),
-    [alerts, fus, leads, now],
+    [alerts, fus, leads, pfus, projects, now],
   );
 
   return items.map((a) => (

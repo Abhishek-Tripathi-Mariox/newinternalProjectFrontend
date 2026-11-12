@@ -1,5 +1,6 @@
 import { sod } from '@/lib/date';
 import { getActiveOwners } from '@/store/owners';
+import { serverNow } from '@/lib/clock';
 
 /**
  * Everyone tracked by Live / Attendance / Reports: delivery members followed
@@ -28,7 +29,7 @@ export function groupAttendance(attLog, from, to) {
  * For today, open work/break segments run until `now`.
  * @returns {{first, last, work, br, breaks:[start,end|null][], segs:['w'|'b',a,b][], online, onBreak}}
  */
-export function sumDay(list, d, now = Date.now()) {
+export function sumDay(list, d, now = serverNow()) {
   const T = sod(now);
   let first = null;
   let last = null;

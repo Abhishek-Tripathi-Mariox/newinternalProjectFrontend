@@ -3,6 +3,7 @@ import { DAY, NOON, sod, range, fd, dateTime } from '@/lib/date';
 import { INK, RED, tone, avatarTone } from '@/lib/color';
 import { escapeHtml as esc, printHtml } from '@/lib/download';
 import { hh, inr } from '@/lib/format';
+import { serverNow } from '@/lib/clock';
 
 /** Current milestone id of a project: first not-Done (by n), else the last; '' if none. */
 export function curMs(milestones, pid) {
@@ -83,7 +84,7 @@ const ZERO = Object.freeze({ all: 0, today: 0, yest: 0, week: 0, month: 0, range
  * @param {object} pj projects UI state (uses pj.f filters)
  * @param {number} now
  */
-export function buildProjectsModel(S, pj, now = Date.now()) {
+export function buildProjectsModel(S, pj, now = serverNow()) {
   const f = pj.f;
   const D = DAY;
   const T = sod(now);

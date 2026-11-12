@@ -86,6 +86,11 @@ function CrCard({ row: c, onOpen, onAct, onPdf }) {
             Mark done
           </Button>
         )}
+        {(c.isDraft || c.isSent) && (
+          <Button size="sm" variant="secondary" onClick={() => onOpen(c)}>
+            Edit
+          </Button>
+        )}
         <Button size="sm" variant="secondary" onClick={() => onOpen(c)}>
           Details &amp; documents
         </Button>

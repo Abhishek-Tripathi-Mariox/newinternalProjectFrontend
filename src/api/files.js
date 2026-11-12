@@ -11,6 +11,7 @@
 import { useEffect, useState } from 'react';
 import { api, ms, request } from './client';
 import { docKind, MAX_FILE } from '@/domain/files';
+import { serverNow } from '@/lib/clock';
 
 const BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -32,7 +33,7 @@ export const isPending = (d) => !!(d && d.file);
 export function pendingFiles(list) {
   const files = Array.from(list || []).filter((f) => typeof File !== 'undefined' && f instanceof File);
   const ok = files.filter((f) => f.size <= MAX_FILE);
-  const now = Date.now();
+  const now = serverNow();
   const atts = ok.map((f, i) => ({ name: f.name, size: f.size, type: f.type || '', at: now + i, kind: docKind(f.name), url: URL.createObjectURL(f), file: f }));
   return { atts, skipped: files.length - ok.length };
 }

@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
-import { Avatar, ProgressBar, Select } from '@/components/ui';
+import { Avatar, ConfirmButton, ProgressBar, Select } from '@/components/ui';
 import { GREEN, MUTED, RED, barColor, projectColor, tone } from '@/lib/color';
-import { fd } from '@/lib/date';
+import { fd, parseDay, ymd } from '@/lib/date';
 import { hh, pctW } from '@/lib/format';
 import { MILESTONE_STATUS } from '@/config/constants';
 import { milestoneByMember } from '../lib/logs';
@@ -15,7 +15,7 @@ const MS_KEYS = Object.keys(MILESTONE_STATUS);
  * Project-drawer milestone row: editable name / allocation (PM only), status
  * select, progress, and the expandable "who logged these hours" breakdown.
  */
-function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberId, logs, memberById, onUpdate, onToggle, onToggleMember }) {
+function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberId, logs, memberById, onUpdate, onDelete, onToggle, onToggleMember }) {
   const pct = m.alloc ? used / m.alloc : 0;
   const rem = m.alloc - used;
   const od = msOverdue(m, T);
@@ -43,7 +43,20 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
               <div className={s.name}>{m.name}</div>
             )}
             <div className={s.due} style={{ color: od ? RED : MUTED }}>
-              Due {fd(m.due)}
+              {canEdit ? (
+                <label className={s.dueEdit}>
+                  Due
+                  <input
+                    className={s.dueInput}
+                    type="date"
+                    value={m.due ? ymd(m.due) : ''}
+                    aria-label={`${m.name} due date`}
+                    onChange={(e) => e.target.value && onUpdate(m.id, { due: parseDay(e.target.value) })}
+                  />
+                </label>
+              ) : (
+                <>Due {fd(m.due)}</>
+              )}
               {od ? ' · overdue' : ''}
             </div>
           </div>
@@ -65,6 +78,11 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
               <span className={s.pmOnly} title="Only the project manager can change allocated hours">
                 {hh(m.alloc || 0)} allocated · PM only
               </span>
+            )}
+            {canEdit && onDelete && !m.cr && used === 0 && (
+              <ConfirmButton size="sm" variant="ghost" confirmLabel="Delete?" aria-label={`Delete ${m.name}`} title="Delete milestone" onConfirm={() => onDelete(m.id)}>
+                ✕
+              </ConfirmButton>
             )}
           </div>
         </div>

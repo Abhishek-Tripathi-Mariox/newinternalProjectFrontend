@@ -9,6 +9,7 @@ import { parseDay, ymd } from '@/lib/date';
 import { hh, pctW } from '@/lib/format';
 import { ACTIVE_STATUSES } from './lib/view';
 import s from './WorkModals.module.css';
+import { serverNow } from '@/lib/clock';
 
 const BLANK = { p: '', ms: '', h: '', note: '' };
 const OVERTIME = 'oklch(0.55 0.15 300)';
@@ -31,7 +32,7 @@ export default function LogHoursModal({ member, project, date, onClose }) {
 
   const [form, setForm] = useState(() => {
     const mid = member || (members[0] || {}).id;
-    return { member: mid, date: ymd(date || Date.now()), rows: rowsFor(projects, milestones, mid, project) };
+    return { member: mid, date: ymd(date || serverNow()), rows: rowsFor(projects, milestones, mid, project) };
   });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);

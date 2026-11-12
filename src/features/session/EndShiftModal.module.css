@@ -16,6 +16,10 @@
   display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.1fr) 76px minmax(0, 1.4fr) 28px;
   gap: 8px; align-items: center;
 }
+.internalGrid {
+  display: grid; grid-template-columns: minmax(0, 1fr) 76px minmax(0, 2.4fr) 28px;
+  gap: 8px; align-items: center;
+}
 .hoursHead { font-size: 12px; font-weight: 500; color: var(--label); margin-top: 4px; }
 .hoursInput { text-align: right; }
 .addRow {
@@ -53,6 +57,7 @@
 
 @media (max-width: 640px) {
   .hoursGrid { grid-template-columns: 1fr 1fr; }
+  .internalGrid { grid-template-columns: 1fr 76px; }
   .hoursHead { display: none; }
   .pmGrid { grid-template-columns: 1fr; }
 }

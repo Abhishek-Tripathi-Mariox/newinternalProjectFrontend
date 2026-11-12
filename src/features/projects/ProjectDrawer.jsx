@@ -1,4 +1,5 @@
-import { Drawer, ProgressBar, Select } from '@/components/ui';
+import { Button, Drawer, ProgressBar, Select } from '@/components/ui';
+import { useIsPM } from '@/hooks/useIsPM';
 import { useStore } from '@/store';
 import { useScoped } from '@/hooks/useScoped';
 import { useProjectsModel } from '@/hooks/useProjectsModel';
@@ -8,8 +9,10 @@ import { hh, money, pctW } from '@/lib/format';
 import { HealthPill } from './components/bits';
 import PortalSection from './drawer/PortalSection';
 import DocsLinksSection from './drawer/DocsLinksSection';
+import IntegrationsSection from './drawer/IntegrationsSection';
 import MilestonesSection from './drawer/MilestonesSection';
 import CrSection from './drawer/CrSection';
+import FollowUpsSection from './drawer/FollowUpsSection';
 import TeamSection from './drawer/TeamSection';
 import DayWorkSection from './drawer/DayWorkSection';
 import { BugsSection, RecentLogsSection, TasksSection } from './drawer/WorkItemsSections';
@@ -31,6 +34,8 @@ export default function ProjectDrawer() {
   const setPj = useStore((st) => st.setPj);
   const updProj = useStore((st) => st.updProj);
   const flash = useStore((st) => st.flash);
+  const openModal = useStore((st) => st.openModal);
+  const isPM = useIsPM();
   const { members } = useScoped();
   const model = useProjectsModel();
 
@@ -78,8 +83,19 @@ export default function ProjectDrawer() {
     />
   );
 
+  const actions = (
+    <>
+      {isPM(sp) && (
+        <Button size="sm" onClick={() => openModal('proj', { editId: sp.id })}>
+          Edit
+        </Button>
+      )}
+      {statusSelect}
+    </>
+  );
+
   return (
-    <Drawer open onClose={close} width={760} header={header} actions={statusSelect} label={sp.name}>
+    <Drawer open onClose={close} width={760} header={header} actions={actions} label={sp.name}>
         <div className={s.facts}>
           <Fact label="Project manager">{pm ? pm.name : '—'}</Fact>
           <Fact label="Start">{fd(sp.start)}</Fact>
@@ -123,7 +139,9 @@ export default function ProjectDrawer() {
 
         <PortalSection {...sectionProps} />
         <DocsLinksSection {...sectionProps} />
+        <IntegrationsSection {...sectionProps} />
         <MilestonesSection {...sectionProps} />
+        <FollowUpsSection {...sectionProps} />
         <CrSection {...sectionProps} />
         <TeamSection {...sectionProps} />
         <TasksSection {...sectionProps} />

@@ -1,6 +1,7 @@
 /**
  * Date helpers. All "day" values in the app are local start-of-day timestamps (ms).
  */
+import { serverNow } from './clock';
 export const MINUTE = 6e4;
 export const HOUR = 36e5;
 export const DAY = 864e5;
@@ -16,7 +17,7 @@ export function sod(t) {
   return d.getTime();
 }
 
-export const today = () => sod(Date.now());
+export const today = () => sod(serverNow());
 
 /** Move `n` days from a start-of-day value, DST-safe. */
 export const addDays = (day, n) => sod(day + n * DAY + NOON);
@@ -38,7 +39,7 @@ export const parseDay = (v) => (v ? sod(new Date(`${v}T12:00`).getTime()) : null
 
 /** "Today" / "Tomorrow" / "Yesterday" / "9 Nov". */
 export function dLabel(t) {
-  const dd = Math.round((sod(t) - sod(Date.now())) / DAY);
+  const dd = Math.round((sod(t) - sod(serverNow())) / DAY);
   if (dd === 0) return 'Today';
   if (dd === 1) return 'Tomorrow';
   if (dd === -1) return 'Yesterday';
@@ -119,13 +120,13 @@ export function workdaysBetween(a, b) {
 }
 
 /** "5 min ago" / "3h ago" / date label. */
-export function ago(t, now = Date.now()) {
+export function ago(t, now = serverNow()) {
   if (!t) return 'Never';
   const m = Math.round((now - t) / MINUTE);
   return m < 2 ? 'Just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : dLabel(t);
 }
 
-export const greeting = (now = Date.now()) => {
+export const greeting = (now = serverNow()) => {
   const hr = new Date(now).getHours();
   return hr < 12 ? 'morning' : hr < 17 ? 'afternoon' : 'evening';
 };

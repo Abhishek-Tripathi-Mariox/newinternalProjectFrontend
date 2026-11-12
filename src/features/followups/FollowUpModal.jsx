@@ -11,6 +11,7 @@ import { useCopyMeet } from './useCopyMeet';
 import { TYPE_NAMES, typeDefaults } from './model';
 import s from './FollowUpModal.module.css';
 import { firstOwnerId, getActiveOwners } from '@/store/owners';
+import { serverNow } from '@/lib/clock';
 
 const OWNER_OPTS = () => getActiveOwners().map((o) => ({ value: o.id, label: o.name }));
 const PRIO_OPTS = PRIORITY_NAMES.map((p) => ({ value: p, label: p }));
@@ -31,7 +32,7 @@ function initialForm({ editId, leadId, date }, fus, leads) {
     };
   }
   const l = leads.find((x) => x.id === leadId);
-  const t = Math.ceil((Date.now() + 30 * MINUTE) / HOUR) * HOUR;
+  const t = Math.ceil((serverNow() + 30 * MINUTE) / HOUR) * HOUR;
   return {
     type: 'Meeting', title: '', leadId: leadId || '', owner: l ? l.owner : firstOwnerId(),
     date: date || ymd(t), time: hm(t), dur: '45', prio: 'Medium', remind: '10', meet: true, meetUrl: genMeet(),

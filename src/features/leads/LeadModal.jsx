@@ -10,6 +10,7 @@ import AddChip from './components/AddChip';
 import { closeIfStillOpen } from './closeIfStillOpen';
 import s from './LeadModal.module.css';
 import { firstOwnerId, getActiveOwners } from '@/store/owners';
+import { serverNow } from '@/lib/clock';
 
 const ownerOpts = () => getActiveOwners().map((o) => ({ value: o.id, label: o.name }));
 
@@ -105,7 +106,7 @@ export default function LeadModal({ editId, onClose }) {
   const addFiles = (files) => {
     const list = Array.from(files || []);
     const ok = list.filter((f) => f.size <= MAX_FILE);
-    const atts = ok.map((f) => ({ name: f.name, size: f.size, type: f.type || '', at: Date.now(), kind: docKind(f.name), url: '', file: f }));
+    const atts = ok.map((f) => ({ name: f.name, size: f.size, type: f.type || '', at: serverNow(), kind: docKind(f.name), url: '', file: f }));
     if (atts.length) setForm((f) => ({ ...f, atts: (f.atts || []).concat(atts) }));
     flash(attachedMessage(atts.length, list.length - ok.length));
   };

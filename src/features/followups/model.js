@@ -7,6 +7,7 @@ import { DAY, range, dLabel, tLabel } from '@/lib/date';
 import { calendarLink } from './calendarLink';
 import { initials } from '@/lib/format';
 import { getOwners } from '@/store/owners';
+import { serverNow } from '@/lib/clock';
 
 export const EMPTY_FF = { q: '', type: '', owner: '', priority: '', meet: '', date: 'all', from: '', to: '' };
 
@@ -71,7 +72,7 @@ export const shortTime = (label) => label.replace(':00', '').replace(' ', '').to
  * Derive everything a follow-up row displays (port of the original `fuRow`).
  * Exported so other features can reuse the same labels without the markup.
  */
-export function describeFollowUp(f, lead, now = Date.now()) {
+export function describeFollowUp(f, lead, now = serverNow()) {
   const od = isOverdue(f, now);
   return {
     lead,

@@ -6,6 +6,7 @@
  *   audit {d,actor,text,kind}
  */
 import { api, getAll, ms, dayMs } from './client';
+import { serverNow } from '@/lib/clock';
 
 const isSuper = (me) => !!me && (me.isSuper || (me.role && me.role.id === 'r-super'));
 const canUsers = (me) => isSuper(me) || !!(me && me.role && me.role.perms && me.role.perms.users && me.role.perms.users.v);
@@ -48,7 +49,7 @@ export function userFromMe(me) {
     reports: '',
     join: null,
     status: me.status || 'Active',
-    last: Date.now(),
+    last: serverNow(),
     invited: 0,
     h: me.hue ?? 265,
     memberId: me.memberId || undefined,

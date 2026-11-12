@@ -4,6 +4,7 @@ import { pidOf, sessionUser } from '@/domain/permissions';
 import { curMs } from '@/domain/projects';
 import { getOwners } from '@/store/owners';
 import { fetchEvents, fetchLive, fetchReports, fromApiLog, isCeo, workdayApi } from '@/api/workday';
+import { serverNow } from '@/lib/clock';
 
 /** Same JSON → same reference (keeps polling from re-rendering when nothing changed). */
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -166,7 +167,7 @@ export const createWorkdaySlice = (set, get) => {
         m.rows = ids.length ? ids.map((id) => {
           const ls = todays.filter((l) => l.p === id);
           const isRun = tm && tm.p === id;
-          const h = ls.reduce((x, l) => x + l.h, 0) + (isRun ? (Date.now() - tm.start) / HOUR : 0);
+          const h = ls.reduce((x, l) => x + l.h, 0) + (isRun ? (serverNow() - tm.start) / HOUR : 0);
           return { p: id, ms: (ls[0] && ls[0].ms) || (isRun && tm.ms) || curMs(S.milestones, id), h: h ? String(Math.round(h * 4) / 4) : '', note: ls.map((l) => l.note).filter(Boolean).join('; ') || (isRun ? tm.title : '') };
         }) : [{ p: '', ms: '', h: '', note: '' }];
         m.pmRows = (S.projects || []).filter((p) => p.pm === pid && !['Done', 'Completed', 'Cancelled'].includes(p.status)).map((p) => ({ p: p.id, st: 'On track', note: '' }));
@@ -184,7 +185,10 @@ export const createWorkdaySlice = (set, get) => {
       // Same quick checks as the server (same wording) for instant feedback.
       if (!m.sales) {
         const rows = (m.rows || []).filter((r) => r.p && +r.h > 0);
-        if (!rows.length) return 'Add hours for at least one project.';
+        const internal = (m.internalRows || []).filter((r) => +r.h > 0);
+        if (!rows.length && !internal.length) return 'Add hours for at least one project or internal work.';
+        const blank = internal.findIndex((r) => !(r.note || '').trim());
+        if (blank >= 0) return `Describe the internal work you did (row ${blank + 1}).`;
         if (!m.done.trim()) return 'Write what you completed today.';
       } else if (!m.outcome.trim()) return 'Write a short summary of your day.';
       if (!isSelf(pid)) return 'Only the person themself can submit their end-of-shift report.';
@@ -195,6 +199,7 @@ export const createWorkdaySlice = (set, get) => {
           calls: m.calls === '' ? 0 : +m.calls || 0, meetings: m.meetings === '' ? 0 : +m.meetings || 0,
           rows: m.sales ? [] : (m.rows || []).filter((r) => r.p).map((r) => ({ p: r.p, ms: r.ms || null, h: r.h === '' ? 0 : +r.h || 0, note: r.note || '' })),
           pmRows: (m.pmRows || []).map((x) => ({ p: x.p, st: x.st, note: x.note || '' })),
+          internalRows: m.sales ? [] : (m.internalRows || []).filter((r) => +r.h > 0).map((r) => ({ cat: r.cat || 'Other', h: +r.h || 0, note: r.note || '' })),
         });
       } catch (e) {
         return e.message;

@@ -4,6 +4,7 @@ import { firstAllowedTarget, pidOf } from '@/domain/permissions';
 import { liveBase } from '@/domain/live';
 import { emptyData, initialUiState } from '../initialState';
 import { navigate } from '../navigation';
+import { serverNow } from '@/lib/clock';
 
 /**
  * Session: restore on page load, sign in / out, and load all data from the API.
@@ -45,7 +46,7 @@ export const createSessionSlice = (set, get) => ({
   /** Shared by login + restore: store the principal, load data, set the landing page. */
   async startSession(me, { landing }) {
     const sup = me.role && me.role.id === 'r-super';
-    set({ me, auth: { uid: me.id, at: Date.now() }, viewAs: sup ? null : me.id, boot: 'pending' });
+    set({ me, auth: { uid: me.id, at: serverNow() }, viewAs: sup ? null : me.id, boot: 'pending' });
     await get().bootstrap();
     if (landing) {
       const hit = sup ? { path: '/live' } : firstAllowedTarget(get()) || { path: '/live' };

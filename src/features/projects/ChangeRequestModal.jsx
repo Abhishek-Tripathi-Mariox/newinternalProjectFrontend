@@ -168,6 +168,11 @@ export default function ChangeRequestModal({ pid: pidProp, editId, onClose }) {
         </>
       )}
       {showSave && <Button disabled={busy} onClick={() => save(false)}>Save</Button>}
+      {showSave && !locked && crE.status === 'Sent to client' && (
+        <Button disabled={busy} onClick={() => save(true)} title="Save the changes and send the updated change request to the client again">
+          Save &amp; resend
+        </Button>
+      )}
       {showDecide && (
         <>
           <Button variant="dangerOutline" disabled={busy} onClick={() => act('reject', form.note)}>
@@ -186,7 +191,7 @@ export default function ChangeRequestModal({ pid: pidProp, editId, onClose }) {
       open
       onClose={onClose}
       width={700}
-      title={crE ? `${crE.id} · ${crStatusLabel(crE.status)}` : 'New change request'}
+      title={crE ? `${can && !locked ? 'Edit ' : ''}${crE.id} · ${crStatusLabel(crE.status)}` : 'New change request'}
       sub={`${crP.name} · ${crP.client}`}
       footer={footer}
     >

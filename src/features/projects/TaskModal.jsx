@@ -9,6 +9,7 @@ import { DAY, fd, ymd } from '@/lib/date';
 import { PRIORITY_NAMES } from '@/config/constants';
 import { TASK_STATUS_KEYS } from './workItems';
 import s from './WorkModals.module.css';
+import { serverNow } from '@/lib/clock';
 
 /** Initial form (port of openTask). */
 function initialForm(task, pre, projects, milestones) {
@@ -21,7 +22,7 @@ function initialForm(task, pre, projects, milestones) {
   const p = projects.find((x) => x.id === pre.p) || projects.find((x) => x.status === 'Running') || projects[0] || {};
   return {
     title: '', p: p.id || '', ms: p.id ? curMs(milestones, p.id) : '', a: pre.a || '', st: pre.st || 'To do', prio: 'Medium',
-    due: ymd(Date.now() + 3 * DAY), est: '', desc: '', cl: [],
+    due: ymd(serverNow() + 3 * DAY), est: '', desc: '', cl: [],
   };
 }
 
@@ -78,7 +79,7 @@ export default function TaskModal({ editId, p, a, st, onClose }) {
       onClose={onClose}
       width={640}
       title={isEdit ? 'Edit task' : 'New task'}
-      sub={isEdit && task ? `${task.id} · created ${fd(task.created || Date.now())}` : undefined}
+      sub={isEdit && task ? `${task.id} · created ${fd(task.created || serverNow())}` : undefined}
       footer={(
         <div className={s.footer}>
           <div>{isEdit && <Button variant="dangerOutline" onClick={del} disabled={busy}>Delete task</Button>}</div>

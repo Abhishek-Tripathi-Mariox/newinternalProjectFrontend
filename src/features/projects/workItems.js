@@ -7,6 +7,7 @@ import { DAY, fday, dLabel, sod } from '@/lib/date';
 import { MUTED, RED } from '@/lib/color';
 import { initials, plural } from '@/lib/format';
 import { TASK_STATUS, BUG_STATUS, BUG_SEVERITY, PRIORITIES } from '@/config/constants';
+import { serverNow } from '@/lib/clock';
 
 export const TASK_STATUS_KEYS = Object.keys(TASK_STATUS);
 export const BUG_STATUS_KEYS = Object.keys(BUG_STATUS);
@@ -39,13 +40,13 @@ export const msShort = (ms) => (ms ? `M${ms.n} · ${ms.name}` : '—');
 
 // ───────────────────────── Tasks ─────────────────────────
 export const isTaskOpen = (t) => t.st !== 'Done';
-export const isTaskOverdue = (t, T = sod(Date.now())) => isTaskOpen(t) && !!t.due && t.due < T;
+export const isTaskOverdue = (t, T = sod(serverNow())) => isTaskOpen(t) && !!t.due && t.due < T;
 
 const prioRank = (p) => (PRIORITIES[p] === 25 ? 0 : PRIORITIES[p] === 70 ? 1 : 2);
 /** High → Medium → Low, then earliest due first. */
 export const taskSort = (a, b) => prioRank(a.prio) - prioRank(b.prio) || (a.due || Infinity) - (b.due || Infinity);
 
-export function taskDue(t, T = sod(Date.now())) {
+export function taskDue(t, T = sod(serverNow())) {
   const od = isTaskOverdue(t, T);
   const dd = t.due ? Math.round((t.due - T) / DAY) : null;
   const label = !t.due ? 'No due date' : t.st === 'Done' ? fday(t.due) : od ? `Overdue · ${fday(t.due)}` : dd === 0 ? 'Due today' : dd === 1 ? 'Tomorrow' : fday(t.due);
@@ -72,13 +73,13 @@ export function taskFilters(T, weekEnd) {
 
 // ───────────────────────── Bugs ─────────────────────────
 export const isBugOpen = (b) => b.st !== 'Closed' && b.st !== 'Fixed';
-export const isBugOverdue = (b, T = sod(Date.now())) => isBugOpen(b) && !!b.due && b.due < T;
+export const isBugOverdue = (b, T = sod(serverNow())) => isBugOpen(b) && !!b.due && b.due < T;
 
 const SEV_RANK = { Critical: 0, Major: 1, Minor: 2, Trivial: 3 };
 /** Most severe first, then earliest due. */
 export const bugSort = (a, b) => SEV_RANK[a.sev] - SEV_RANK[b.sev] || (a.due || Infinity) - (b.due || Infinity);
 
-export function bugDue(b, T = sod(Date.now())) {
+export function bugDue(b, T = sod(serverNow())) {
   const od = isBugOverdue(b, T);
   const dd = b.due ? Math.round((b.due - T) / DAY) : null;
   const label = !b.due ? '—' : !isBugOpen(b) ? fday(b.due) : od ? `Overdue · ${fday(b.due)}` : dd === 0 ? 'Due today' : dd === 1 ? 'Tomorrow' : fday(b.due);
@@ -89,7 +90,7 @@ export function bugDue(b, T = sod(Date.now())) {
 export const bugClosedAt = (b, T) => ((b.log || []).slice(-1)[0] || {}).d || T;
 
 /** "3d open" / "Closed in 2d". */
-export function bugAge(b, T = sod(Date.now())) {
+export function bugAge(b, T = sod(serverNow())) {
   const end = isBugOpen(b) ? T : bugClosedAt(b, T);
   const age = Math.max(0, Math.round((sod(end) - b.repDate) / DAY));
   return isBugOpen(b) ? `${age}d open` : `Closed in ${age}d`;

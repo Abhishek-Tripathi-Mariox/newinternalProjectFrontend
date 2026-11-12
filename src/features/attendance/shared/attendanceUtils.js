@@ -119,7 +119,8 @@ export function reportLines(reports, projectsById, pid, day) {
     L.push(['Activity', `${r.calls} calls · ${r.meetings} meetings`]);
     if (r.outcome) L.push(['Summary', r.outcome]);
   } else {
-    L.push(['Hours', (r.rows || []).map((x) => `${pname(x.p) || ''} ${x.h}h${x.note ? ` (${x.note})` : ''}`).join(' · ')]);
+    if ((r.rows || []).length) L.push(['Hours', r.rows.map((x) => `${pname(x.p) || ''} ${x.h}h${x.note ? ` (${x.note})` : ''}`).join(' · ')]);
+    if ((r.internal || []).length) L.push(['Internal work', r.internal.map((x) => `${x.cat} ${x.h}h${x.note ? ` (${x.note})` : ''}`).join(' · ')]);
     if (r.done) L.push(['Completed', r.done]);
     (r.pm || []).forEach((x) => L.push([pname(x.p) || 'Project', x.st + (x.note ? ` · ${x.note}` : '')]));
   }

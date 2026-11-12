@@ -17,6 +17,7 @@ const ReportsPage = lazy(() => import('@/features/reports/ReportsPage'));
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
 const LeadsPage = lazy(() => import('@/features/leads/LeadsPage'));
 const FollowUpsPage = lazy(() => import('@/features/followups/FollowUpsPage'));
+const ProjectFollowUpsPage = lazy(() => import('@/features/project-followups/ProjectFollowUpsPage'));
 const LeadSetupPage = lazy(() => import('@/features/setup/LeadSetupPage'));
 const ProjectsPage = lazy(() => import('@/features/projects/ProjectsPage'));
 const UsersPage = lazy(() => import('@/features/users/UsersPage'));
@@ -108,6 +109,7 @@ export default function App() {
               <Route path="follow-ups" element={<FollowUpsPage />} />
               <Route path="lead-setup" element={<LeadSetupPage />} />
               <Route path="projects" element={<ProjectsPage />} />
+              <Route path="project-follow-ups" element={<ProjectFollowUpsPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="*" element={<Navigate to={landing} replace />} />
             </Route>

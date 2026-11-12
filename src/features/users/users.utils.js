@@ -10,7 +10,7 @@ export const USER_STATUSES = ['Active', 'Invited', 'Deactivated'];
 /** Hue per user status. */
 export const STATUS_HUE = { Active: 150, Invited: 70, Deactivated: 265 };
 /** Hue per audit-log kind. */
-export const LOG_KIND_HUE = { Invite: 70, Role: 300, Access: 25, Profile: 250 };
+export const LOG_KIND_HUE = { Invite: 70, Role: 300, Access: 25, Profile: 250, Credentials: 150 };
 
 /** Roles that become delivery members (Team & hours, timesheets). */
 export const DELIVERY_ROLES = ['r-pm', 'r-tl', 'r-tm', 'r-qa'];

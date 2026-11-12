@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/store';
-import { can, scopeState, firstProjectsTab } from '@/domain/permissions';
+import { authUser, can, scopeState, firstProjectsTab, viewUser } from '@/domain/permissions';
 import { people } from '@/domain/attendance';
 import { useNow } from '@/hooks/useNow';
 import { DAY, sod } from '@/lib/date';
@@ -43,8 +43,8 @@ export default function Sidebar() {
   const now = useNow(15000);
   const st = useStore(
     useShallow((x) => ({
-      leads: x.leads, fus: x.fus, members: x.members, projects: x.projects, logs: x.logs, tasks: x.tasks, bugs: x.bugs,
-      milestones: x.milestones, crs: x.crs, users: x.users, roles: x.roles, viewAs: x.viewAs, live: x.live, pjTab: x.pj?.tab, myId: x.auth?.uid,
+      leads: x.leads, fus: x.fus, pfus: x.pfus, members: x.members, projects: x.projects, logs: x.logs, tasks: x.tasks, bugs: x.bugs,
+      milestones: x.milestones, crs: x.crs, users: x.users, roles: x.roles, viewAs: x.viewAs, live: x.live, pjTab: x.pj?.tab, myId: x.auth?.uid, auth: x.auth,
     })),
   );
   const setPj = useStore((x) => x.setPj);
@@ -70,11 +70,13 @@ export default function Sidebar() {
       showFu: c('fu'),
       showLeadSetup: can(st, 'leads', 'e'),
       showProj: ['projects', 'tasks', 'bugs', 'ts'].some(c),
+      showPfu: c('projects') && (viewUser(st) || authUser(st) || {}).role !== 'r-client',
       showTeam: c('team'),
       showUsers: c('users'),
       working: countWorking(st, now),
       leadCount: (S.leads || []).length,
       due: (S.fus || []).filter((f) => !f.done && f.due < T + DAY).length,
+      pfuDue: (S.pfus || []).filter((f) => !f.done && f.due < T + DAY).length,
       running: running.length,
       missing: (S.members || []).filter((m) => running.some((p) => (p.team || []).includes(m.id)) && !logT[m.id]).length,
       invited: (st.users || []).filter((u) => u.status === 'Invited').length,
@@ -133,6 +135,15 @@ export default function Sidebar() {
             meta={<span className={s.meta}>{nav.running}</span>}
           >
             <span>Projects</span>
+          </NavItem>
+        )}
+        {nav.showPfu && (
+          <NavItem
+            to="/project-follow-ups"
+            active={isAt('/project-follow-ups')}
+            meta={nav.pfuDue > 0 ? <span className={s.badgeRed} aria-label={`${nav.pfuDue} due`}>{nav.pfuDue}</span> : null}
+          >
+            <span>Project follow-ups</span>
           </NavItem>
         )}
         {nav.showTeam && (

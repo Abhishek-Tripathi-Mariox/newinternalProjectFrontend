@@ -37,6 +37,8 @@
 .removeBtn:hover { color: var(--red); }
 .addBtn { align-self: flex-start; border: 0; background: transparent; color: var(--primary); padding: 2px 0; font-size: 12.5px; font-weight: 600; cursor: pointer; }
 .right { text-align: right; }
+.msHead, .msRow { display: grid; grid-template-columns: minmax(0, 1fr) 150px 80px 24px; gap: 8px; align-items: center; }
+.msHead { font-size: 11.5px; font-weight: 400; color: var(--muted); }
 
 .decide { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; background: var(--surface-3); border-radius: 10px; padding: 12px; }
 .histTitle { font-size: 13px; font-weight: 600; }
@@ -51,7 +53,15 @@
   .grid2 { grid-template-columns: 1fr; }
   .taskRow { grid-template-columns: minmax(0, 1fr) 1fr 60px 24px; }
   .taskCost { display: none; }
+  .msHead, .msRow { grid-template-columns: minmax(0, 1fr) 130px 60px 24px; }
 }
 .strong { font-weight: 600; }
 .del.del { color: oklch(0.5 0.15 25); font-weight: 600; }
 .histTitle { color: var(--ink); }
+.credRow { display: grid; grid-template-columns: minmax(0, 1.2fr) 90px minmax(0, 1.5fr) 24px; gap: 8px; align-items: center; }
+@media (max-width: 560px) { .credRow { grid-template-columns: 1fr 80px; } }
+.credView { display: grid; grid-template-columns: minmax(0, 1.1fr) 70px minmax(0, 1.6fr) 92px; gap: 8px; align-items: center; }
+.credViewBtns { display: flex; gap: 10px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.viewLink { font-size: 13px; color: var(--primary); overflow-wrap: anywhere; text-decoration: none; display: inline-block; padding-top: 6px; }
+@media (max-width: 560px) { .credView { grid-template-columns: 1fr 80px; } }

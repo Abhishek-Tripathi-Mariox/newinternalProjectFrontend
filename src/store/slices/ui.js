@@ -2,6 +2,7 @@ import { MINUTE } from '@/lib/date';
 import { useSettings } from '@/store/settings';
 import { canAccessPath, firstAllowedTarget } from '@/domain/permissions';
 import { navigate, currentPath } from '../navigation';
+import { serverNow } from '@/lib/clock';
 
 /** Defaults merged into attendance / report filters (original AF0 / RF0). */
 export const ATT_FILTER_DEFAULT = { range: 'today', date: '', team: '', q: '', person: '', exp: '' };
@@ -26,12 +27,17 @@ export const createUiSlice = (set, get) => ({
   /** Raise reminder alerts for follow-ups entering their reminder window (call every 15s). */
   checkReminders() {
     if (useSettings.getState().reminderAlerts === false) return;
-    const now = Date.now();
-    const hits = get().fus.filter((f) => !f.done && !f.notified && f.remind > 0 && now >= f.due - f.remind * MINUTE && now < f.due + 5 * MINUTE);
+    const now = serverNow();
+    const due = (f) => !f.done && !f.notified && f.remind > 0 && now >= f.due - f.remind * MINUTE && now < f.due + 5 * MINUTE;
+    // Project follow-ups: only the owner gets the pop-up.
+    const me = get().auth && (get().users || []).find((u) => u.id === get().auth.uid);
+    const myMember = me && me.memberId;
+    const hits = get().fus.filter(due).concat((get().pfus || []).filter((f) => due(f) && f.owner === myMember));
     if (!hits.length) return;
     const ids = new Set(hits.map((f) => f.id));
     set((s) => ({
       fus: s.fus.map((f) => (ids.has(f.id) ? { ...f, notified: true } : f)),
+      pfus: (s.pfus || []).map((f) => (ids.has(f.id) ? { ...f, notified: true } : f)),
       alerts: s.alerts.concat(hits.map((f) => f.id)).slice(-4),
     }));
   },

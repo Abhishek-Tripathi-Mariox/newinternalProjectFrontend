@@ -6,6 +6,8 @@
  * - On 401 the client refreshes once (concurrent requests share one refresh) and retries.
  * - Errors are thrown as ApiError with the server's message (already in the UI's wording).
  */
+import { syncClock } from '@/lib/clock';
+
 const BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 let accessToken = null;
@@ -30,8 +32,10 @@ export class ApiError extends Error {
 /** Refresh the access token using the refresh cookie. Returns the new session or null. */
 export async function refreshSession() {
   if (!refreshing) {
+    const sentAt = Date.now();
     refreshing = fetch(`${BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
       .then(async (r) => {
+        syncClock(r.headers.get('x-server-time'), sentAt, Date.now());
         // 204 = no refresh cookie (signed out); 401 = expired / revoked session.
         if (!r.ok || r.status === 204) return null;
         const body = await r.json();
@@ -79,11 +83,13 @@ export async function request(method, path, { query, body, form, raw, retry = tr
   }
 
   let res;
+  const sentAt = Date.now();
   try {
     res = await fetch(buildUrl(path, query), { method, headers, body: payload, credentials: 'include' });
   } catch {
     throw new ApiError(0, 'NETWORK', 'Can’t reach the server — check your connection and try again');
   }
+  syncClock(res.headers.get('x-server-time'), sentAt, Date.now());
 
   if (res.status === 401 && retry && !path.startsWith('/auth/')) {
     const s = await refreshSession();

@@ -1,5 +1,6 @@
 import { DAY } from '@/lib/date';
 import { getLeadStatusNames } from '@/store/masters';
+import { serverNow } from '@/lib/clock';
 
 /** Lead scoring, freshness and duplicate detection (from the prototype's _rv). */
 
@@ -51,7 +52,7 @@ export function scorePill(n) {
  *  - nextOf[id]: next open follow-up
  *  - dupOf[id]: {otherId: 'email & phone'} reasons
  */
-export function leadInsights({ leads, fus, staleDays = 7, now = Date.now() }) {
+export function leadInsights({ leads, fus, staleDays = 7, now = serverNow() }) {
   const nextOf = {};
   fus.forEach((f) => {
     if (!f.done && f.leadId && (!nextOf[f.leadId] || f.due < nextOf[f.leadId].due)) nextOf[f.leadId] = f;

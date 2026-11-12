@@ -6,6 +6,7 @@ import { describeFollowUp } from '../model';
 import DoneCheck from './DoneCheck';
 import MeetLink from './MeetLink';
 import s from './FollowUpRow.module.css';
+import { serverNow } from '@/lib/clock';
 
 /**
  * One follow-up, rendered in one of four layouts:
@@ -25,7 +26,7 @@ function FollowUpRow({ fu, compact = false, variant, now, className = '' }) {
   const copyMeet = useCopyMeet();
 
   const v = variant || (compact ? 'lead' : 'full');
-  const d = describeFollowUp(fu, lead, now ?? Date.now());
+  const d = describeFollowUp(fu, lead, now ?? serverNow());
   const toggle = () => toggleFu(fu.id);
   const edit = () => openModal('fu', { editId: fu.id });
   const openLead = () => lead && selectLead(lead.id);

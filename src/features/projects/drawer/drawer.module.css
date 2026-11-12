@@ -131,3 +131,8 @@
 .h3 { margin: 0; font-size: 15px; font-weight: 600; }
 .sectionHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .sectionHead .small { margin-top: 2px; }
+
+/* Milestones: inline "add milestone" row */
+.msAdd { display: grid; grid-template-columns: minmax(0, 1fr) 150px 80px auto auto; gap: 8px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--row-line); }
+.msAddErr { grid-column: 1 / -1; }
+@media (max-width: 560px) { .msAdd { grid-template-columns: 1fr 1fr; } }

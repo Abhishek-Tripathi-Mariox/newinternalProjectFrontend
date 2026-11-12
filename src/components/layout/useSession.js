@@ -20,17 +20,20 @@ export function useSession() {
     const va = viewUser({ users, viewAs });
     const meU = va || authUser || { name: 'Super Admin', h: 265, role: 'r-super' };
     const own = !!(auth && viewAs && auth.uid === viewAs);
+    // The real (signed-in) account decides who may preview — not the user being previewed —
+    // so a Super Admin previewing a PM still has the picker to switch back.
+    const authIsSuper = !!authUser && authUser.role === 'r-super';
     return {
       auth: authUser,
       user,
       isSuper,
-      authIsSuper: !!authUser && authUser.role === 'r-super',
+      authIsSuper,
       pid,
       viewAs,
       roleName,
       me: { ...meU, roleName: roleName(meU.role) || 'Super Admin' },
       previewing: !!va && !own,
-      canPreview: !auth || isSuper,
+      canPreview: !auth || authIsSuper,
     };
   }, [authUser, user, pid, isSuper, auth, users, roles, viewAs]);
 }

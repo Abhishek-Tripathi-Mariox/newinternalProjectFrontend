@@ -16,6 +16,7 @@ export default function MilestonesSection({ project: sp, info: I, model }) {
   const updMs = useStore((st) => st.updMs);
   const addMs = useStore((st) => st.addMs);
   const delMs = useStore((st) => st.delMs);
+  const setMsTeam = useStore((st) => st.setMsTeam);
   const [draft, setDraft] = useState(null); // { name, due, hours } while adding
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -100,6 +101,7 @@ export default function MilestonesSection({ project: sp, info: I, model }) {
           memberById={memberById}
           onUpdate={onUpdate}
           onDelete={delMs}
+          onTeam={canEdit ? setMsTeam : undefined}
           onToggle={onToggle}
           onToggleMember={onToggleMember}
         />

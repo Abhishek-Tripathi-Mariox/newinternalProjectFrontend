@@ -1,5 +1,6 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Avatar, ConfirmButton, ProgressBar, Select } from '@/components/ui';
+import ToggleChip from './ToggleChip';
 import { GREEN, MUTED, RED, barColor, projectColor, tone } from '@/lib/color';
 import { fd, parseDay, ymd } from '@/lib/date';
 import { hh, pctW } from '@/lib/format';
@@ -15,7 +16,10 @@ const MS_KEYS = Object.keys(MILESTONE_STATUS);
  * Project-drawer milestone row: editable name / allocation (PM only), status
  * select, progress, and the expandable "who logged these hours" breakdown.
  */
-function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberId, logs, memberById, onUpdate, onDelete, onToggle, onToggleMember }) {
+function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberId, logs, memberById, onUpdate, onDelete, onTeam, onToggle, onToggleMember }) {
+  const [picking, setPicking] = useState(false);
+  const team = m.team || [];
+  const toggleTeam = (id) => onTeam && onTeam(m.id, team.includes(id) ? team.filter((x) => x !== id) : team.concat(id));
   const pct = m.alloc ? used / m.alloc : 0;
   const rem = m.alloc - used;
   const od = msOverdue(m, T);
@@ -86,6 +90,38 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
             )}
           </div>
         </div>
+
+        <div className={s.teamLine}>
+          <span className={s.teamLabel}>Team</span>
+          {team.length ? (
+            team.map((id) => {
+              const mem = memberById[id] || { name: id, h: 265 };
+              return (
+                <span key={id} className={s.teamPerson} title={mem.role || ''}>
+                  <Avatar name={mem.name} h={mem.h} size={20} />
+                  {mem.name}
+                </span>
+              );
+            })
+          ) : (
+            <span className={s.muted}>No one assigned</span>
+          )}
+          {canEdit && onTeam && (
+            <button type="button" className={s.teamEdit} onClick={() => setPicking((x) => !x)} aria-expanded={picking}>
+              {picking ? 'Done' : team.length ? 'Change' : '+ Assign'}
+            </button>
+          )}
+        </div>
+        {picking && (
+          <div className={s.teamPick}>
+            {(project.team || []).map((id) => (
+              <ToggleChip key={id} on={team.includes(id)} onClick={() => toggleTeam(id)}>
+                {(memberById[id] || { name: id }).name}
+              </ToggleChip>
+            ))}
+            <span className={s.muted}>Not listed? Add them under “Team on this project” first.</span>
+          </div>
+        )}
 
         <div className={s.progress}>
           <div className={s.bar}>

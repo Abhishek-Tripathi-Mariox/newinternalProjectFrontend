@@ -23,7 +23,7 @@ function spreadDue(start, due, i) {
 }
 
 /** The five default milestones; `auto` rows follow the project dates until their date is edited. */
-const templateRows = (start, due) => MILESTONE_TEMPLATE.names.map((name, i) => ({ key: i, name, due: spreadDue(start, due, i), hours: '', auto: true }));
+const templateRows = (start, due) => MILESTONE_TEMPLATE.names.map((name, i) => ({ key: i, name, due: spreadDue(start, due, i), hours: '', auto: true, team: [] }));
 const respread = (rows, start, due) => rows.map((r, i) => (r.auto ? { ...r, due: i < MILESTONE_TEMPLATE.fractions.length ? spreadDue(start, due, i) : due } : r));
 let rowKey = 100;
 
@@ -52,9 +52,10 @@ function initialForm(members) {
 /** Existing project → form values (edit mode), with its milestones as editable rows. */
 function editForm(p, milestones) {
   const ms = milestones.filter((m) => m.p === p.id).sort((a, b) => a.n - b.n)
-    .map((m) => ({ key: m.id, id: m.id, name: m.name, due: m.due ? ymd(m.due) : '', hours: String(m.alloc || 0), auto: false, cr: !!m.cr }));
+    .map((m) => ({ key: m.id, id: m.id, name: m.name, due: m.due ? ymd(m.due) : '', hours: String(m.alloc || 0), auto: false, cr: !!m.cr, team: m.team || [] }));
   return {
     ms,
+    team: (p.team || []).filter((x) => x !== p.pm),
     budget: String(p.budgetHours != null ? p.budgetHours : ms.reduce((x, r) => x + (+r.hours || 0), 0)),
     name: p.name || '',
     client: p.client || '',
@@ -94,7 +95,13 @@ export default function NewProjectModal({ editId, onClose }) {
     return next.ms ? { ...next, ms: respread(next.ms, next.start, next.due) } : next;
   });
   const setMs = (key, patch) => setForm((f) => ({ ...f, ms: f.ms.map((r) => (r.key === key ? { ...r, ...patch } : r)) }));
-  const addMs = () => setForm((f) => ({ ...f, ms: f.ms.concat({ key: rowKey++, name: '', due: f.due, hours: '', auto: false }) }));
+  const addMs = () => setForm((f) => ({ ...f, ms: f.ms.concat({ key: rowKey++, name: '', due: f.due, hours: '', auto: false, team: [] }) }));
+  const [teamRow, setTeamRow] = useState(null); // milestone row whose team picker is open
+  const toggleMsMember = (key, id) => setForm((f) => ({
+    ...f,
+    ms: f.ms.map((r) => (r.key === key ? { ...r, team: (r.team || []).includes(id) ? r.team.filter((x) => x !== id) : (r.team || []).concat(id) } : r)),
+  }));
+  const memberName = (id) => (members.find((m) => m.id === id) || {}).name || id;
   const removeMs = (key) => setForm((f) => ({ ...f, ms: f.ms.filter((r) => r.key !== key) }));
   const msTotal = (form.ms || []).reduce((x, r) => x + (+r.hours || 0), 0);
   const budgetN = Math.max(0, +form.budget || 0);
@@ -129,7 +136,12 @@ export default function NewProjectModal({ editId, onClose }) {
     if (name && !services.includes(name)) toggleService(name);
     return !!name;
   };
-  const toggleMember = (id) => setForm((f) => ({ ...f, team: f.team.includes(id) ? f.team.filter((x) => x !== id) : f.team.concat(id) }));
+  // Taking someone off the project team also takes them off its milestones.
+  const toggleMember = (id) => setForm((f) => (f.team.includes(id)
+    ? { ...f, team: f.team.filter((x) => x !== id), ms: (f.ms || []).map((r) => ({ ...r, team: (r.team || []).filter((x) => x !== id) })) }
+    : { ...f, team: f.team.concat(id) }));
+  const otherMembers = members.filter((m) => m.id !== form.pm && (!m.inactive || form.team.includes(m.id)));
+  const projectTeam = [form.pm].concat(form.team).filter(Boolean);
 
   const save = async () => {
     if (busy) return;
@@ -205,19 +217,29 @@ export default function NewProjectModal({ editId, onClose }) {
         <Field label="Due date">
           <Input type="date" value={form.due} onChange={setDate('due')} />
         </Field>
-        {!isEdit && (
-        <Field as="div" full label="Team">
-          <div className={s.chips}>
-            {members
-              .filter((m) => m.id !== form.pm)
-              .map((m) => (
+        <Field
+          as="div"
+          full
+          label={
+            <>
+              Team <span className={s.light}>· the project manager is always on the team</span>
+            </>
+          }
+        >
+          {otherMembers.length ? (
+            <div className={s.chips}>
+              {otherMembers.map((m) => (
                 <ToggleChip key={m.id} on={form.team.includes(m.id)} onClick={() => toggleMember(m.id)}>
                   {m.name}
                 </ToggleChip>
               ))}
-          </div>
+            </div>
+          ) : (
+            <div className={s.note}>
+              No other delivery people yet. Invite developers, designers or QA from <b>Users &amp; roles</b> — they show up here once they accept.
+            </div>
+          )}
         </Field>
-        )}
         <Field label="Contract value (₹)">
           <Input type="number" min="0" step="10000" value={form.value} onChange={set('value')} placeholder="e.g. 1500000" />
         </Field>
@@ -256,6 +278,7 @@ export default function NewProjectModal({ editId, onClose }) {
             <span>Name</span>
             <span>Due date</span>
             <span>Hours</span>
+            <span>Team</span>
             <span />
           </div>
           {form.ms.map((r, i) => (
@@ -263,12 +286,30 @@ export default function NewProjectModal({ editId, onClose }) {
               <Input value={r.name} placeholder={`Milestone ${i + 1}`} aria-label={`Milestone ${i + 1} name`} onChange={(e) => setMs(r.key, { name: e.target.value })} />
               <Input type="date" value={r.due} aria-label={`Milestone ${i + 1} due date`} onChange={(e) => setMs(r.key, { due: e.target.value, auto: false })} />
               <Input type="number" min="0" step="1" value={r.hours} placeholder="0" aria-label={`Milestone ${i + 1} hours`} onChange={(e) => setMs(r.key, { hours: e.target.value })} />
+              <button
+                type="button"
+                className={`${s.teamBtn} ${teamRow === r.key ? s.teamBtnOn : ''}`}
+                aria-expanded={teamRow === r.key}
+                title={(r.team || []).length ? (r.team || []).map(memberName).join(', ') : 'Pick who works on this milestone'}
+                onClick={() => setTeamRow(teamRow === r.key ? null : r.key)}
+              >
+                {(r.team || []).length ? `👥 ${r.team.length}` : '+ Team'}
+              </button>
               {r.cr || loggedOn(r.id) ? (
                 <span className={s.removeBtn} title={r.cr ? 'Change-request milestone — can’t be removed' : 'Hours are logged on this milestone — it can’t be removed'}>🔒</span>
               ) : (
                 <button type="button" className={s.removeBtn} aria-label={`Remove milestone ${i + 1}`} onClick={() => removeMs(r.key)}>
                   ✕
                 </button>
+              )}
+              {teamRow === r.key && (
+                <div className={s.msTeam}>
+                  {projectTeam.length ? projectTeam.map((id) => (
+                    <ToggleChip key={id} on={(r.team || []).includes(id)} onClick={() => toggleMsMember(r.key, id)}>
+                      {memberName(id)}
+                    </ToggleChip>
+                  )) : <span className={s.light}>Pick a project manager and team above first.</span>}
+                </div>
               )}
             </div>
           ))}
@@ -287,7 +328,7 @@ export default function NewProjectModal({ editId, onClose }) {
           )}
           <span className={s.note}>
             {budgetN > 0 ? 'Use “Distribute budget” to split it, or type hours per milestone.' : 'Without a budget, the milestone hours add up to the project budget.'}
-            {isEdit ? ' Team, links and documents are edited in the project panel.' : ' You can rename, re-date, add or remove milestones later too.'}
+            {isEdit ? ' Links and documents are edited in the project panel.' : ' You can rename, re-date, add or remove milestones later too.'}
           </span>
         </div>
         {err && <ErrorText className={s.full}>{err}</ErrorText>}

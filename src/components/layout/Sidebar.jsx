@@ -196,6 +196,9 @@ export default function Sidebar() {
             {sess.authIsSuper && !sess.previewing && (
               <button type="button" className={s.footBtn} onClick={() => openModal('settings')}>Settings</button>
             )}
+            {sess.authIsSuper && sess.previewing && (
+              <button type="button" className={s.footBtn} onClick={() => setViewAs(null)} title="Back to your own view">Exit preview</button>
+            )}
             <button type="button" className={s.footBtn} onClick={logout}>Log out</button>
           </div>
         )}

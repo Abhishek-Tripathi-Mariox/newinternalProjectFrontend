@@ -107,12 +107,24 @@ export const createDeliverySlice = (set, get) => {
             if (name !== old.name) b.name = name;
             if (hours !== (+old.alloc || 0)) b.allocHours = hours;
             if (r.due !== toDay(old.due)) b.dueDate = r.due;
+            const t = [...(r.team || [])].sort().join(',');
+            if (t !== [...(old.team || [])].sort().join(',')) b.team = r.team || [];
             if (Object.keys(b).length) msOps.push(() => api.patch(`/milestones/${old.id}`, b));
           } else if (!r.id) {
-            msOps.push(() => api.post(`/projects/${id}/milestones`, { name, dueDate: r.due, allocHours: hours }));
+            msOps.push(() => api.post(`/projects/${id}/milestones`, { name, dueDate: r.due, allocHours: hours, team: r.team || [] }));
           }
         });
       }
+      // Project team typed in the form (PM excluded): add / remove members.
+      const teamOps = [];
+      if (Array.isArray(m.team)) {
+        const pm = patch.pm ?? p.pm;
+        const want = new Set(m.team.filter((x) => x !== pm));
+        const have = (p.team || []).filter((x) => x !== p.pm && x !== pm);
+        have.filter((x) => !want.has(x)).forEach((x) => teamOps.push(() => api.del(`/projects/${id}/members/${x}`)));
+        [...want].filter((x) => !(p.team || []).includes(x)).forEach((x) => teamOps.push(() => api.post(`/projects/${id}/members`, { memberId: x })));
+      }
+      msOps.unshift(...teamOps);
       if (!Object.keys(patch).length && !msOps.length) { set({ modal: null }); return undefined; }
       const saveProject = async () => {
         if (!Object.keys(patch).length) return;
@@ -133,6 +145,9 @@ export const createDeliverySlice = (set, get) => {
       } catch (e) {
         if (msOps.length) resyncDelivery();
         return msg(e);
+      }
+      if (teamOps.length) {
+        try { mergeProject(await api.get(`/projects/${id}`)); } catch { resyncDelivery(); }
       }
       if (msOps.length) {
         try {
@@ -311,10 +326,10 @@ export const createDeliverySlice = (set, get) => {
     },
 
     /** Add a milestone at the end of a project (PM). Returns an error message or undefined. */
-    async addMs(pid, { name, due, hours }) {
+    async addMs(pid, { name, due, hours, team }) {
       if (!due) return 'Pick a due date.';
       try {
-        const dto = await api.post(`/projects/${pid}/milestones`, { name: (name || '').trim(), dueDate: due, allocHours: Math.max(0, +hours || 0) });
+        const dto = await api.post(`/projects/${pid}/milestones`, { name: (name || '').trim(), dueDate: due, allocHours: Math.max(0, +hours || 0), team: team || [] });
         set((s) => ({ milestones: upsert(s.milestones, fromApiMilestone(dto)) }));
         get().flash(`Milestone added · ${dto.name}`);
         return undefined;
@@ -333,6 +348,22 @@ export const createDeliverySlice = (set, get) => {
         set((s) => ({ milestones: s.milestones.filter((x) => x.id !== mid && x.p !== pid).concat(fresh) }));
         get().flash(`Milestone deleted${m ? ` · ${m.name}` : ''}`);
       } catch (e) {
+        get().flash(msg(e));
+      }
+    },
+
+    /** Replace who works on a milestone (PM). People not on the project team join it. */
+    async setMsTeam(mid, team) {
+      const m = get().milestones.find((x) => x.id === mid);
+      const prev = m ? m.team : [];
+      set((s) => ({ milestones: patchById(s.milestones, mid, { team }) }));
+      try {
+        const dto = await api.patch(`/milestones/${mid}`, { team });
+        set((s) => ({ milestones: upsert(s.milestones, fromApiMilestone(dto)) }));
+        const p = projectOf(dto.projectId);
+        if (p && team.some((x) => !(p.team || []).includes(x))) mergeProject(await api.get(`/projects/${dto.projectId}`));
+      } catch (e) {
+        set((s) => ({ milestones: patchById(s.milestones, mid, { team: prev }) }));
         get().flash(msg(e));
       }
     },

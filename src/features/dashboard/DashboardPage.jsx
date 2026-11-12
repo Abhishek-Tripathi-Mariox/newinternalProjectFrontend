@@ -5,14 +5,14 @@ import { Avatar, Card, DataTable, Input, KpiCard, KpiGrid, ProgressBar, Segmente
 import FollowUpRow from '@/features/followups/components/FollowUpRow';
 import { useLeadInsights } from '@/features/leads/useLeadInsights';
 import { ownerOf, statusTone, val } from '@/features/leads/leadUtils';
-import { OWNERS } from '@/config/constants';
 import { GREEN_TEXT, MUTED, RED } from '@/lib/color';
 import { DAY, greeting, ymd } from '@/lib/date';
 import { money } from '@/lib/format';
 import { PERIODS, periodLabel, useDashboardModel } from './useDashboardModel';
 import s from './DashboardPage.module.css';
+import { getOwners } from '@/store/owners';
 
-const ownerOpts = [{ value: '', label: 'All owners' }, ...OWNERS.map((o) => ({ value: o.id, label: o.name }))];
+const ownerOpts = () => [{ value: '', label: 'All owners' }, ...getOwners().map((o) => ({ value: o.id, label: o.name }))];
 
 /** One clickable "label · bar · [value] · count" row (funnel + sources). */
 function BarRow({ label, dot, pct, color, valueLabel, count, onClick }) {
@@ -98,7 +98,7 @@ export default function DashboardPage() {
                 onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
             </div>
           )}
-          <Select compact value={ow} onChange={(e) => setOw(val(e))} options={ownerOpts} aria-label="Owner" />
+          <Select compact value={ow} onChange={(e) => setOw(val(e))} options={ownerOpts()} aria-label="Owner" />
         </div>
       </div>
 

@@ -90,21 +90,18 @@ export default function LeadSetupPage() {
     },
   ];
 
-  const onSave = (name, hue) => {
-    if (edit.mode === 'add') {
-      const before = all.length;
-      const res = m[K.add](name);
-      if (!res) return `Enter a ${K.noun} name.`;
-      if (useMasters.getState()[tab === 'stages' ? 'leadStatuses' : tab].length === before) return `A ${K.noun} called “${res}” already exists.`;
-      if (tab === 'stages') m.setStageHue(res, hue);
-      return undefined;
-    }
+  const KIND_OF = { stages: 'stage', sources: 'source', services: 'service' };
+  /** Saves to the server; resolves to an error message or undefined. */
+  const onSave = async (name, hue) => {
+    if (edit.mode === 'add') return m.createMaster(KIND_OF[tab], name, tab === 'stages' ? hue : undefined);
     const r = edit.row;
+    let cur = r.name;
     if (!r.core) {
-      const e = m[K.rename](r.name, name);
+      const e = await m[K.rename](r.name, name);
       if (e) return e;
+      cur = name.trim().replace(/\s+/g, ' ');
     }
-    if (tab === 'stages') m.setStageHue(r.core ? r.name : name.trim().replace(/\s+/g, ' '), hue);
+    if (tab === 'stages' && hue !== r.hue) return m.setStageHue(cur, hue);
     return undefined;
   };
 

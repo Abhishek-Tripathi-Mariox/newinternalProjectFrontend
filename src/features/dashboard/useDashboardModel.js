@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { OWNERS } from '@/config/constants';
 import { useLeadStatusNames, useSources } from '@/store/masters';
 import { DAY, parseDay, sod } from '@/lib/date';
 import { isOpenLead } from '@/features/leads/leadUtils';
+import { getOwners } from '@/store/owners';
 
 export const PERIODS = [['7', '7D'], ['30', '30D'], ['90', '90D'], ['ytd', 'YTD'], ['custom', 'Custom']];
 export const PERIOD_LABELS = { 7: 'Last 7 days', 30: 'Last 30 days', 90: 'Last 90 days', ytd: 'Year to date' };
@@ -78,7 +78,7 @@ export function useDashboardModel({ leads, fus, now, period, from, to, owner: ow
 
     const agenda = fToday.filter((f) => f.due >= now - 30 * 6e4).sort((a, b) => a.due - b.due).slice(0, 6);
 
-    const team = OWNERS.filter((o) => !ow || o.id === ow).map((o) => {
+    const team = getOwners().filter((o) => !ow || o.id === ow).map((o) => {
       const mine = leads.filter((l) => l.owner === o.id);
       const op = mine.filter(isOpenLead);
       const w = mine.filter((l) => l.status === 'Won' && inRange(l, pr));

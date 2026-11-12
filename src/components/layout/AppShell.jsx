@@ -7,6 +7,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import BreakBanner from './BreakBanner';
 import PreviewBanner from './PreviewBanner';
+import SecretNote from './SecretNote';
 import NoAccess from './NoAccess';
 import LazyBoundary from './LazyBoundary';
 import { pageOf } from './routes';
@@ -42,6 +43,7 @@ export default function AppShell() {
         <Header />
         <BreakBanner />
         <PreviewBanner />
+        <SecretNote />
         <div id="main-content" className={s.content} tabIndex={-1}>
           {allowed ? (
             <LazyBoundary resetKey={pathname} fallback={<div className={s.loading} role="status">Loading…</div>}>

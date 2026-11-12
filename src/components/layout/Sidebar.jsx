@@ -44,7 +44,7 @@ export default function Sidebar() {
   const st = useStore(
     useShallow((x) => ({
       leads: x.leads, fus: x.fus, members: x.members, projects: x.projects, logs: x.logs, tasks: x.tasks, bugs: x.bugs,
-      milestones: x.milestones, crs: x.crs, users: x.users, roles: x.roles, viewAs: x.viewAs, live: x.live, pjTab: x.pj?.tab,
+      milestones: x.milestones, crs: x.crs, users: x.users, roles: x.roles, viewAs: x.viewAs, live: x.live, pjTab: x.pj?.tab, myId: x.auth?.uid,
     })),
   );
   const setPj = useStore((x) => x.setPj);
@@ -85,7 +85,7 @@ export default function Sidebar() {
   const onProj = pathname.startsWith('/projects');
   const teamActive = onProj && TEAM_TABS.includes(st.pjTab);
   const isAt = (p) => pathname === p || pathname.startsWith(`${p}/`);
-  const previewOpts = (st.users || []).filter((u) => u.status === 'Active' && u.id !== 'u-ceo');
+  const previewOpts = (st.users || []).filter((u) => u.status === 'Active' && u.id !== st.myId && u.role !== 'r-super');
 
   return (
     <aside className={s.aside} aria-label="Main navigation">

@@ -38,6 +38,7 @@ export default function NewProjectModal({ onClose }) {
   const saveProj = useStore((st) => st.saveProj);
   const [form, setForm] = useState(() => initialForm(members));
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const services = form.service.split(', ').filter(Boolean);
@@ -56,8 +57,11 @@ export default function NewProjectModal({ onClose }) {
   };
   const toggleMember = (id) => setForm((f) => ({ ...f, team: f.team.includes(id) ? f.team.filter((x) => x !== id) : f.team.concat(id) }));
 
-  const save = () => {
-    const e = saveProj(form);
+  const save = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await saveProj(form);
+    setBusy(false);
     if (e) setErr(e);
     else onClose?.();
   };
@@ -65,8 +69,8 @@ export default function NewProjectModal({ onClose }) {
   const footer = (
     <div className={s.footer}>
       <Button onClick={onClose}>Cancel</Button>
-      <Button variant="primary" onClick={save}>
-        Create project
+      <Button variant="primary" onClick={save} disabled={busy}>
+        {busy ? 'Creating…' : 'Create project'}
       </Button>
     </div>
   );

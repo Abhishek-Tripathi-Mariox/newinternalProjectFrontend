@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '@/store';
 import { Button, DocumentsPanel, ErrorText, Field, Input, Modal, Select, Textarea } from '@/components/ui';
-import { OWNERS } from '@/config/constants';
 import { getServices, getSources, useMasters, useServices, useSources } from '@/store/masters';
 import { findDuplicateLeads } from '@/domain/leads';
 import { viewUser } from '@/domain/permissions';
+import { attachedMessage, docKind, MAX_FILE } from '@/domain/files';
 import { ownerOf, val } from './leadUtils';
 import AddChip from './components/AddChip';
 import { closeIfStillOpen } from './closeIfStillOpen';
 import s from './LeadModal.module.css';
+import { firstOwnerId, getActiveOwners } from '@/store/owners';
 
-const ownerOpts = OWNERS.map((o) => ({ value: o.id, label: o.name }));
+const ownerOpts = () => getActiveOwners().map((o) => ({ value: o.id, label: o.name }));
 
 /** Initial form (port of the original openLeadModal). */
 function initialForm(lead, vu) {
@@ -22,7 +23,7 @@ function initialForm(lead, vu) {
   }
   return {
     company: '', contact: '', email: '', phone: '', service: '', source: getSources()[0],
-    owner: (vu && vu.ownerId) || OWNERS[0].id, value: '', notes: '', atts: [],
+    owner: (vu && vu.ownerId) || firstOwnerId(), value: '', notes: '', atts: [],
   };
 }
 
@@ -74,6 +75,7 @@ export default function LeadModal({ editId, onClose }) {
   const users = useStore((st) => st.users);
   const viewAs = useStore((st) => st.viewAs);
   const saveLead = useStore((st) => st.saveLead);
+  const flash = useStore((st) => st.flash);
   const selectLead = useStore((st) => st.selectLead);
   const closeModal = useStore((st) => st.closeModal);
 
@@ -82,6 +84,7 @@ export default function LeadModal({ editId, onClose }) {
   const isEdit = !!editId;
   const [form, setForm] = useState(() => initialForm(editId ? leads.find((l) => l.id === editId) : null, vu));
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: val(e) }));
   const sources = useSources();
@@ -90,10 +93,21 @@ export default function LeadModal({ editId, onClose }) {
   const dups = useMemo(() => findDuplicateLeads(form, leads, editId).slice(0, 3), [form, leads, editId]);
   const ownerName = form.owner ? ownerOf(form.owner).name : '';
 
-  const save = () => {
-    const e = saveLead(form, editId || undefined);
+  const save = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await saveLead(form, editId || undefined);
+    setBusy(false);
     if (e) return setErr(e);
     closeIfStillOpen('lead', onClose);
+  };
+  /** New files are kept as File objects and uploaded by saveLead after the lead is saved. */
+  const addFiles = (files) => {
+    const list = Array.from(files || []);
+    const ok = list.filter((f) => f.size <= MAX_FILE);
+    const atts = ok.map((f) => ({ name: f.name, size: f.size, type: f.type || '', at: Date.now(), kind: docKind(f.name), url: '', file: f }));
+    if (atts.length) setForm((f) => ({ ...f, atts: (f.atts || []).concat(atts) }));
+    flash(attachedMessage(atts.length, list.length - ok.length));
   };
   const openExisting = (id) => { closeModal(); selectLead(id); };
 
@@ -106,7 +120,7 @@ export default function LeadModal({ editId, onClose }) {
       footer={(
         <>
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save}>{isEdit ? 'Save changes' : 'Add lead'}</Button>
+          <Button variant="primary" onClick={save} disabled={busy} aria-busy={busy}>{isEdit ? 'Save changes' : 'Add lead'}</Button>
         </>
       )}
     >
@@ -132,12 +146,12 @@ export default function LeadModal({ editId, onClose }) {
         <Field label={isEdit ? 'Owner' : isExec ? 'Owner' : 'Assign lead to'} as={isEdit || isExec ? 'div' : undefined}>
           {isEdit ? <LockedOwner name={ownerName} note="Use Transfer in the lead" />
             : isExec ? <LockedOwner name={ownerName} note="Assigned to you" />
-              : <Select value={form.owner} onChange={set('owner')} options={ownerOpts} />}
+              : <Select value={form.owner} onChange={set('owner')} options={ownerOpts()} />}
         </Field>
         <Field label="Est. value (₹)"><Input type="number" value={form.value} onChange={set('value')} /></Field>
         <Field full label="Notes"><Textarea value={form.notes} onChange={set('notes')} rows={3} /></Field>
         <div className={s.full}>
-          <DocumentsPanel docs={form.atts} onChange={(fn) => setForm((f) => ({ ...f, atts: fn(f.atts || []) }))} />
+          <DocumentsPanel docs={form.atts} onAddFiles={addFiles} onChange={(fn) => setForm((f) => ({ ...f, atts: fn(f.atts || []) }))} />
         </div>
         {dups.length > 0 && (
           <div className={`${s.full} ${s.dups}`}>

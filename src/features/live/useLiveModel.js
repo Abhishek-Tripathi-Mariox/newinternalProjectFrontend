@@ -8,8 +8,8 @@ import { crMoney } from '@/domain/projects';
 import { DAY, MINUTE, LATE_MIN, sod, clock, fmtDur, isSunday } from '@/lib/date';
 import { h1, hh, money } from '@/lib/format';
 import { toneStrong } from '@/lib/color';
-import { OWNERS } from '@/config/constants';
 import { liveBase, actsSince } from './liveData';
+import { getActiveOwners, getOwners } from '@/store/owners';
 
 const HOUR = 36e5;
 /** Sort order for people rows: problems first. */
@@ -61,7 +61,7 @@ export function buildLiveModel(S, { now, liveF, feedF, staleDays, pv }) {
   ppl.forEach((p) => { PPL[p.id] = p; });
   const PRJ = {};
   S.projects.forEach((p) => { PRJ[p.id] = p; });
-  const ownerName = (id) => (OWNERS.find((o) => o.id === id) || { name: id }).name;
+  const ownerName = (id) => (getOwners().find((o) => o.id === id) || { name: id }).name;
 
   const LATE = T + LATE_MIN * MINUTE;
   const pastLate = !isSunday(T) && now > LATE;
@@ -229,7 +229,7 @@ export function buildLiveModel(S, { now, liveF, feedF, staleDays, pv }) {
     });
 
   // ---- Sales table ----------------------------------------------------------
-  const sales = OWNERS.map((o) => {
+  const sales = getActiveOwners().map((o) => {
     const r = liveAll.find((x) => x.id === o.id) || { id: o.id, name: o.name, h: o.h, status: '—', sBg: '', sFg: '' };
     const ac = actsToday.filter((x) => x.owner === o.id);
     const fT = S.fus.filter((f) => f.owner === o.id && f.due >= T && f.due < T + DAY);

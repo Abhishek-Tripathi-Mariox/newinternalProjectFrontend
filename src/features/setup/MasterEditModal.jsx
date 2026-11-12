@@ -6,17 +6,21 @@ import s from './LeadSetupPage.module.css';
 const HUES = [250, 220, 190, 150, 120, 95, 70, 45, 25, 340, 300, 265];
 
 /**
- * Add / rename a list value. `onSave(name, hue)` returns an error message or undefined.
+ * Add / rename a list value. `onSave(name, hue)` resolves to an error message or undefined.
  * Stages also pick a colour.
  */
 export default function MasterEditModal({ title, noun, initialName = '', initialHue, withColor, nameLocked, onSave, onClose }) {
   const [name, setName] = useState(initialName);
   const [hue, setHue] = useState(initialHue ?? HUES[0]);
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const save = () => {
+  const save = async () => {
+    if (busy) return;
     if (!name.trim()) return setErr(`Enter a ${noun} name.`);
-    const e = onSave(name, hue);
+    setBusy(true);
+    const e = await onSave(name, hue);
+    setBusy(false);
     if (e) return setErr(e);
     onClose();
   };
@@ -30,7 +34,7 @@ export default function MasterEditModal({ title, noun, initialName = '', initial
       footer={(
         <>
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save}>{initialName ? 'Save changes' : `Add ${noun}`}</Button>
+          <Button variant="primary" onClick={save} disabled={busy} aria-busy={busy}>{initialName ? 'Save changes' : `Add ${noun}`}</Button>
         </>
       )}
     >

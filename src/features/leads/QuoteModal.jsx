@@ -42,6 +42,7 @@ export default function QuoteModal({ leadId, qid = null, onClose }) {
   const saveQuote = useStore((st) => st.saveQuote);
   const [form, setForm] = useState(() => initialForm(lead, qid && lead ? (lead.quotes || []).find((q) => q.id === qid) : null));
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState('');
   const t = qTotals(form);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -49,8 +50,11 @@ export default function QuoteModal({ leadId, qid = null, onClose }) {
   const removeItem = (i) => setForm((f) => ({ ...f, items: f.items.filter((_, j) => j !== i) }));
   const addLine = () => setForm((f) => ({ ...f, items: f.items.concat({ d: '', q: '1', r: '' }) }));
 
-  const save = (send) => {
-    const e = saveQuote(leadId, form, qid || null, send);
+  const save = async (send) => {
+    if (busy) return;
+    setBusy(send ? 'send' : 'draft');
+    const e = await saveQuote(leadId, form, qid || null, send);
+    setBusy('');
     if (e) return setErr(e);
     closeIfStillOpen('quote', onClose);
   };
@@ -65,8 +69,8 @@ export default function QuoteModal({ leadId, qid = null, onClose }) {
       footer={(
         <>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => save(false)}>Save draft</Button>
-          <Button variant="primary" onClick={() => save(true)}>Mark sent &amp; download PDF</Button>
+          <Button onClick={() => save(false)} disabled={!!busy} aria-busy={busy === 'draft'}>Save draft</Button>
+          <Button variant="primary" onClick={() => save(true)} disabled={!!busy} aria-busy={busy === 'send'}>Mark sent &amp; download PDF</Button>
         </>
       )}
     >

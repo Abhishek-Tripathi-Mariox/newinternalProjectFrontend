@@ -1,11 +1,12 @@
 /**
  * Follow-up view helpers shared by the page, the row renderer and the modal.
  */
-import { OWNERS, FU_TYPES, PRIORITIES, REMINDERS, FU_DEFAULTS } from '@/config/constants';
+import { FU_TYPES, PRIORITIES, REMINDERS, FU_DEFAULTS } from '@/config/constants';
 import { avatarTone, tone, RED, INK } from '@/lib/color';
 import { DAY, range, dLabel, tLabel } from '@/lib/date';
 import { calendarLink } from './calendarLink';
 import { initials } from '@/lib/format';
+import { getOwners } from '@/store/owners';
 
 export const EMPTY_FF = { q: '', type: '', owner: '', priority: '', meet: '', date: 'all', from: '', to: '' };
 
@@ -13,7 +14,7 @@ export const TYPE_NAMES = Object.keys(FU_TYPES);
 
 /** Sales owner with avatar colours (unknown id → "Unassigned"). */
 export function ownerOf(id) {
-  const o = OWNERS.find((x) => x.id === id) || { id: '', name: 'Unassigned', h: 265 };
+  const o = getOwners().find((x) => x.id === id) || { id: '', name: 'Unassigned', h: 265 };
   return { ...o, ini: initials(o.name), ...avatarTone(o.h) };
 }
 

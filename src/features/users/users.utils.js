@@ -19,8 +19,8 @@ export const MANAGER_ROLES = ['r-super', 'r-admin', 'r-sm', 'r-pm', 'r-tl'];
 /** Department auto-selected when a role is picked (r-admin keeps the current one). */
 export const ROLE_DEPT = { 'r-sm': 'Sales', 'r-se': 'Sales', 'r-pm': 'PMO', 'r-qa': 'QA', 'r-super': 'Management' };
 
-/** The CEO / owner account: can't be previewed, deactivated or deleted. */
-export const OWNER_ID = 'u-ceo';
+/** Super Admin accounts and your own account can't be previewed, deactivated or deleted from the list. */
+export const isProtectedUser = (u, myId) => !!u && (u.id === myId || u.role === 'r-super');
 
 export const PERM_ACTIONS = [['v', 'View'], ['c', 'Create'], ['e', 'Edit'], ['d', 'Delete']];
 export const DATA_SCOPES = [

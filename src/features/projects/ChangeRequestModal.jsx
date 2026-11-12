@@ -52,6 +52,7 @@ export default function ChangeRequestModal({ pid: pidProp, editId, onClose }) {
   const startPid = pidProp || (crE && crE.p) || (projects.find((p) => ACTIVE_STATUSES.includes(p.status) && isPM(p)) || {}).id;
   const [form, setForm] = useState(() => initialForm(projects.find((p) => p.id === startPid), crE, milestones));
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const crP = projects.find((p) => p.id === form.pid) || null;
 
@@ -131,16 +132,16 @@ export default function ChangeRequestModal({ pid: pidProp, editId, onClose }) {
 
   if (!crP) return null;
 
-  const save = (send) => {
-    const e = saveCr(form, crE ? crE.id : null, send);
+  const run = async (fn) => {
+    if (busy) return;
+    setBusy(true);
+    const e = await fn();
+    setBusy(false);
     if (e) setErr(e);
     else onClose?.();
   };
-  const act = (a, ...args) => {
-    const e = crAct(crE.id, a, ...args);
-    if (e) setErr(e);
-    else onClose?.();
-  };
+  const save = (send) => run(() => saveCr(form, crE ? crE.id : null, send));
+  const act = (a, ...args) => run(() => crAct(crE.id, a, ...args));
 
   const showDraft = can && (!crE || crE.status === 'Draft');
   const showSave = can && !!crE && crE.status !== 'Draft';
@@ -150,7 +151,7 @@ export default function ChangeRequestModal({ pid: pidProp, editId, onClose }) {
   const footer = (
     <div className={s.footer}>
       {showDel && (
-        <Button variant="ghost" className={s.del} onClick={() => act('delete')}>
+        <Button variant="ghost" className={s.del} disabled={busy} onClick={() => act('delete')}>
           Delete
         </Button>
       )}
@@ -160,19 +161,19 @@ export default function ChangeRequestModal({ pid: pidProp, editId, onClose }) {
       </Button>
       {showDraft && (
         <>
-          <Button onClick={() => save(false)}>Save draft</Button>
-          <Button variant="primary" onClick={() => save(true)}>
+          <Button disabled={busy} onClick={() => save(false)}>Save draft</Button>
+          <Button variant="primary" disabled={busy} onClick={() => save(true)}>
             Send to client
           </Button>
         </>
       )}
-      {showSave && <Button onClick={() => save(false)}>Save</Button>}
+      {showSave && <Button disabled={busy} onClick={() => save(false)}>Save</Button>}
       {showDecide && (
         <>
-          <Button variant="dangerOutline" onClick={() => act('reject', form.note)}>
+          <Button variant="dangerOutline" disabled={busy} onClick={() => act('reject', form.note)}>
             Mark rejected
           </Button>
-          <Button variant="primary" className={s.green} onClick={() => act('approve', form.note, { name: form.sigName || '' })}>
+          <Button variant="primary" className={s.green} disabled={busy} onClick={() => act('approve', form.note, { name: form.sigName || '' })}>
             Mark approved
           </Button>
         </>

@@ -1,9 +1,10 @@
 import { DateRangeFilter, SearchInput, Select, Toolbar, Button } from '@/components/ui';
-import { FU_DATE_PRESETS, OWNERS, PRIORITY_NAMES } from '@/config/constants';
+import { FU_DATE_PRESETS, PRIORITY_NAMES } from '@/config/constants';
 import { EMPTY_FF, TYPE_NAMES, hasActiveFilters } from '../model';
+import { getOwners } from '@/store/owners';
 
 const TYPE_OPTS = [{ value: '', label: 'All types' }, ...TYPE_NAMES.map((t) => ({ value: t, label: t }))];
-const OWNER_OPTS = [{ value: '', label: 'All owners' }, ...OWNERS.map((o) => ({ value: o.id, label: o.name }))];
+const OWNER_OPTS = () => [{ value: '', label: 'All owners' }, ...getOwners().map((o) => ({ value: o.id, label: o.name }))];
 const PRIO_OPTS = [{ value: '', label: 'All priorities' }, ...PRIORITY_NAMES.map((p) => ({ value: p, label: p }))];
 const MEET_OPTS = [
   { value: '', label: 'Meet link: any' },
@@ -37,7 +38,7 @@ export default function FollowUpFilters({ ff, setFf }) {
         onChange={(p) => setFf(normDate(p))}
       />
       <Select value={ff.type} onChange={on('type')} options={TYPE_OPTS} aria-label="Type" />
-      <Select value={ff.owner} onChange={on('owner')} options={OWNER_OPTS} aria-label="Owner" />
+      <Select value={ff.owner} onChange={on('owner')} options={OWNER_OPTS()} aria-label="Owner" />
       <Select value={ff.priority} onChange={on('priority')} options={PRIO_OPTS} aria-label="Priority" />
       <Select value={ff.meet} onChange={on('meet')} options={MEET_OPTS} aria-label="Meet link" />
       {hasActiveFilters(ff) && (

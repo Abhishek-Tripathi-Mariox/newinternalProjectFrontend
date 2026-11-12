@@ -100,3 +100,14 @@ body.scroll-locked {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Boot splash / load error (App.jsx) */
+.boot { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 10px; padding: 24px; background: var(--sidebar); color: #fff; text-align: center; }
+.boot-mark { width: 44px; height: 44px; border-radius: 11px; background: oklch(0.6 0.17 265); display: grid; place-items: center; font-weight: 700; font-size: 20px; animation: boot-pulse 1.4s ease-in-out infinite; }
+.boot-title { font-size: 17px; font-weight: 600; margin-top: 6px; }
+.boot-sub { font-size: 13.5px; color: oklch(0.78 0.02 265); max-width: 420px; }
+.boot-actions { display: flex; gap: 10px; margin-top: 8px; }
+.boot-btn { border: 0; border-radius: 8px; padding: 9px 16px; background: #fff; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+.boot-link { border: 0; background: transparent; color: oklch(0.82 0.03 265); font: inherit; cursor: pointer; text-decoration: underline; }
+@keyframes boot-pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .boot-mark { animation: none; } }

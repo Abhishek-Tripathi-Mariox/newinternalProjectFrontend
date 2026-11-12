@@ -15,7 +15,9 @@ const EMPTY = [];
 export default function DocsLinksSection({ project: sp }) {
   const linkDraft = useStore((st) => st.pj.linkDraft);
   const setProjLinks = useStore((st) => st.setProjLinks);
-  const setProjDocs = useStore((st) => st.setProjDocs);
+  const addProjDocs = useStore((st) => st.addProjDocs);
+  const setProjDocKind = useStore((st) => st.setProjDocKind);
+  const removeProjDoc = useStore((st) => st.removeProjDoc);
 
   const saved = sp.links || EMPTY;
   const draft = linkDraft && linkDraft.pid === sp.id ? linkDraft.links : EMPTY;
@@ -24,7 +26,9 @@ export default function DocsLinksSection({ project: sp }) {
 
   // The store keeps valid https:// links on the project and parks the rest in pj.linkDraft.
   const onLinks = useCallback((next) => setProjLinks(sp.id, next), [setProjLinks, sp.id]);
-  const onDocs = useCallback((fn) => setProjDocs(sp.id, (d) => fn(d || [])), [setProjDocs, sp.id]);
+  const onUpload = useCallback((files) => addProjDocs(sp.id, files), [addProjDocs, sp.id]);
+  const onKind = useCallback((doc, kind) => doc.id && setProjDocKind(sp.id, doc.id, kind), [setProjDocKind, sp.id]);
+  const onRemove = useCallback((doc) => doc.id && removeProjDoc(sp.id, doc.id), [removeProjDoc, sp.id]);
 
   const sum = `${saved.length ? `${saved.length} link${saved.length > 1 ? 's' : ''} · ` : ''}${docs.length} file${docs.length === 1 ? '' : 's'}`;
 
@@ -49,7 +53,7 @@ export default function DocsLinksSection({ project: sp }) {
         </div>
       )}
       <LinksEditor links={allLinks} onChange={onLinks} />
-      <DocumentsPanel docs={docs} onChange={onDocs} />
+      <DocumentsPanel docs={docs} onUpload={onUpload} onKind={onKind} onRemove={onRemove} />
     </section>
   );
 }

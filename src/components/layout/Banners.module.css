@@ -122,3 +122,39 @@
   animation: rise 0.18s ease-out;
 }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.secret {
+  margin: 20px 28px 0;
+  background: oklch(0.97 0.02 250);
+  border: 1px solid oklch(0.86 0.05 250);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.secretMain { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 4px; }
+.secretTitle { font-size: 14px; font-weight: 600; color: oklch(0.3 0.06 250); }
+.secretSub { font-size: 12.5px; color: oklch(0.42 0.05 250); }
+.secretValue {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  background: #fff;
+  border: 1px solid oklch(0.88 0.03 250);
+  border-radius: 7px;
+  padding: 6px 9px;
+  word-break: break-all;
+  user-select: all;
+}
+.secretBtns { display: flex; gap: 8px; }
+.secretBtn, .secretClose {
+  height: 34px;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.secretBtn { border: 0; background: var(--ink); color: #fff; }
+.secretClose { border: 1px solid oklch(0.86 0.02 250); background: #fff; color: oklch(0.35 0.02 265); }

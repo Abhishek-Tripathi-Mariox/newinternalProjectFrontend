@@ -3,7 +3,7 @@ import { useStore } from '@/store';
 import { DataTable, Avatar, Pill, HuePill, Button, ActionMenu } from '@/components/ui';
 import { toneStrong } from '@/lib/color';
 import { ago, dLabel } from '@/lib/date';
-import { OWNER_ID, STATUS_HUE, projectsText } from '../users.utils';
+import { STATUS_HUE, isProtectedUser, projectsText } from '../users.utils';
 import s from './UsersTable.module.css';
 
 const EMPTY = [];
@@ -14,6 +14,7 @@ export default function UsersTable({ rows, model, now }) {
   const leads = useStore((st) => st.leads) || EMPTY;
   const projects = useStore((st) => st.projects) || EMPTY;
   const openModal = useStore((st) => st.openModal);
+  const myId = useStore((st) => st.auth?.uid);
   const setViewAs = useStore((st) => st.setViewAs);
   const resendInvite = useStore((st) => st.resendInvite);
   const setUserStatus = useStore((st) => st.setUserStatus);
@@ -93,14 +94,14 @@ export default function UsersTable({ rows, model, now }) {
               key: 'preview',
               label: 'Preview',
               title: 'See the portal as this user',
-              hidden: !(u.status === 'Active' && u.id !== OWNER_ID),
+              hidden: !(u.status === 'Active' && !isProtectedUser(u, myId)),
               onClick: () => setViewAs(u.id),
             },
             {
               key: 'status',
               label: deactivated ? 'Reactivate' : 'Deactivate',
               danger: !deactivated,
-              hidden: !(u.id !== OWNER_ID && u.status !== 'Invited'),
+              hidden: !(!isProtectedUser(u, myId) && u.status !== 'Invited'),
               onClick: () => setUserStatus(u.id, deactivated ? 'Active' : 'Deactivated'),
             },
           ];
@@ -119,7 +120,7 @@ export default function UsersTable({ rows, model, now }) {
         },
       },
     ];
-  }, [roleMap, userMap, leads, projects, now, openModal, setViewAs, resendInvite, setUserStatus]);
+  }, [roleMap, userMap, leads, projects, now, openModal, setViewAs, resendInvite, setUserStatus, myId]);
 
   return (
     <DataTable

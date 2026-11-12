@@ -1,9 +1,9 @@
 import { useStore } from '@/store';
 import { Select } from '@/components/ui';
-import { OWNERS } from '@/config/constants';
 import { useLeadStatusNames, useMasters } from '@/store/masters';
 import { val } from '../leadUtils';
 import s from './BulkBar.module.css';
+import { getActiveOwners } from '@/store/owners';
 
 /** Floating dark action bar shown while leads are selected. */
 export default function BulkBar({ onExport }) {
@@ -19,7 +19,7 @@ export default function BulkBar({ onExport }) {
       <span className={s.count}>{selIds.length} selected</span>
       <Select unstyled value="" placeholder="Assign to…" className={s.select} aria-label="Assign to owner"
         onChange={(e) => { if (e.target.value) bulk('owner', e.target.value); }}
-        options={OWNERS.map((o) => ({ value: o.id, label: o.name }))} />
+        options={getActiveOwners().map((o) => ({ value: o.id, label: o.name }))} />
       <Select
         value=""
         placeholder="Move to stage…"

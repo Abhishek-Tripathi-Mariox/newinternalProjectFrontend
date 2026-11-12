@@ -1,4 +1,5 @@
-import { readFiles, attachedMessage } from '@/domain/files';
+import { attachedMessage } from '@/domain/files';
+import { pendingFiles } from '@/api/files';
 import { useStore } from '@/store';
 import { FileDropzone } from './FileDropzone';
 import { DocumentList } from './DocumentList';
@@ -8,17 +9,22 @@ import s from './Documents.module.css';
 
 /**
  * "Documents" block: label + summary, dropzone, attachment list.
- * docs: attachment[] · onChange(fn) receives an updater `(docs) => nextDocs`.
- * Files are read via domain/files.readFiles (10 MB max, > 1.5 MB stored as name only) and
- * appended through onChange, with the original "N files attached · k skipped" toast.
- * Pass `onAddFiles(files)` to take over file handling yourself instead.
+ *
+ * Two modes:
+ * - **Saved entity** (drawers): pass `onUpload(files)` (async store action that uploads to the
+ *   API), `onKind(doc, kind)` and `onRemove(doc)` (store actions calling the API).
+ * - **Form** (modals, entity not created yet): pass `onChange(updater)`; picked files are kept as
+ *   pending attachments `{name,size,type,at,kind,url: blob:…, file}` (api/files.pendingFiles) and
+ *   uploaded by the store's save action. Flashes "N files attached · k skipped (over 10 MB)".
+ * `onAddFiles(files)` still overrides file handling completely.
  */
-export function DocumentsPanel({ docs = [], onAddFiles, onChange, label = 'Documents', editable = true, className, style }) {
+export function DocumentsPanel({ docs = [], onAddFiles, onUpload, onKind, onRemove, onChange, label = 'Documents', editable = true, className, style }) {
   const flash = useStore((st) => st.flash);
 
   const addFiles = async (files) => {
     if (onAddFiles) return onAddFiles(files);
-    const { atts, skipped } = await readFiles(files);
+    if (onUpload) return onUpload(files);
+    const { atts, skipped } = pendingFiles(files);
     if (atts.length) onChange?.((arr = []) => arr.concat(atts));
     flash?.(attachedMessage(atts.length, skipped));
     return undefined;
@@ -34,8 +40,8 @@ export function DocumentsPanel({ docs = [], onAddFiles, onChange, label = 'Docum
       <DocumentList
         docs={docs}
         editable={editable}
-        onKind={(i, kind) => onChange?.((arr) => arr.map((x, j) => (j === i ? { ...x, kind } : x)))}
-        onRemove={(i) => onChange?.((arr) => arr.filter((_, j) => j !== i))}
+        onKind={(i, kind, doc) => (onKind ? onKind(doc, kind) : onChange?.((arr) => arr.map((x, j) => (j === i ? { ...x, kind } : x))))}
+        onRemove={(i, doc) => (onRemove ? onRemove(doc) : onChange?.((arr) => arr.filter((_, j) => j !== i)))}
       />
     </div>
   );

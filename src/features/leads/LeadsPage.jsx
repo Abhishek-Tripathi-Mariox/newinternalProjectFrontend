@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useStore } from '@/store';
 import { Button, FilterChips, KanbanBoard, SegmentedControl } from '@/components/ui';
 import { useLeadStatusNames } from '@/store/masters';
@@ -6,7 +6,8 @@ import { range } from '@/lib/date';
 import { money } from '@/lib/format';
 import { useLeadInsights } from './useLeadInsights';
 import { leadRowModel } from './leadRow';
-import { exportLeadsCsv, ownerOf, statusOrder, statusTone, sumValue, val } from './leadUtils';
+import { toApiLeadQuery } from '@/api/sales';
+import { ownerOf, statusOrder, statusTone, sumValue, val } from './leadUtils';
 import LeadsFilters from './components/LeadsFilters';
 import LeadFlags from './components/LeadFlags';
 import BulkBar from './components/BulkBar';
@@ -29,6 +30,8 @@ export default function LeadsPage() {
   const selectLead = useStore((st) => st.selectLead);
   const setLead = useStore((st) => st.setLead);
   const flash = useStore((st) => st.flash);
+  const exportLeads = useStore((st) => st.exportLeads);
+  const staleDays = useStore((st) => st.staleDays);
 
   // Everything except the status filter (status chips count against this).
   const base = useMemo(() => {
@@ -74,12 +77,20 @@ export default function LeadsPage() {
   ], [stageNames, base]);
 
   const open = useCallback((id) => selectLead(id), [selectLead]);
-  const exportList = (list) => flash(exportLeadsCsv(list, ins.scoreOf, ins.touch));
-  const onMove = (id, to) => {
+  /** Selected leads as CSV from the server (`ids=` — scope still applies). */
+  const exportSelected = () => exportLeads({ ids: selIds.join(','), staleDays });
+  const [exporting, setExporting] = useState(false);
+  /** Current view as CSV from the server (same filters, sort and scope). */
+  const exportShown = async () => {
+    setExporting(true);
+    await exportLeads(toApiLeadQuery(lf, sort, range(lf.date, lf.from, lf.to), staleDays));
+    setExporting(false);
+  };
+  const onMove = async (id, to) => {
     const ld = leads.find((l) => l.id === id);
     if (ld && ld.status !== to) {
-      setLead(id, 'status', to);
       flash(`${ld.company} → ${to}`);
+      await setLead(id, 'status', to);
     }
   };
 
@@ -91,7 +102,7 @@ export default function LeadsPage() {
           <div className={s.summary}>{shown.length} leads · {money(sumValue(shown))} total value</div>
         </div>
         <div className={s.actions}>
-          <Button onClick={() => exportList(shown)}>Export CSV</Button>
+          <Button onClick={exportShown} disabled={exporting} aria-busy={exporting}>Export CSV</Button>
           <SegmentedControl options={VIEW_OPTIONS} value={leadView} onChange={(v) => setLeadView(val(v))} />
         </div>
       </div>
@@ -102,7 +113,7 @@ export default function LeadsPage() {
 
       <LeadFlags leads={leads} ins={ins} />
 
-      <BulkBar onExport={() => exportList(leads.filter((l) => selIds.includes(l.id)))} />
+      <BulkBar onExport={exportSelected} />
 
       {leadView === 'table' ? (
         <LeadsTable rows={rows} onOpen={open} />

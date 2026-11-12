@@ -135,25 +135,6 @@ export function buildAttendanceModel(S, AF, now) {
     ];
   }
 
-  /** CSV rows: one line per person per working day in range. */
-  const csv = () => {
-    const out = [['Date', 'Person', 'Team', 'Logged in', 'Logged out', 'Breaks', 'Break time (min)', 'Worked (h)', 'Late']];
-    aPpl.forEach((p) => aDays.forEach((d) => {
-      const list = byPD[`${p.id}|${d}`];
-      const s = list ? sumDay(list, d, now) : null;
-      out.push([
-        ymd(d), p.name, p.team,
-        s && s.first ? clock(s.first) : 'Absent',
-        s && s.last ? clock(s.last) : s ? 'Still in' : '',
-        s ? s.breaks.length : 0,
-        s ? Math.round(s.br / 6e4) : 0,
-        s ? (s.work / HOUR_MS).toFixed(2) : 0,
-        s && s.first > d + LATE_MS ? 'Yes' : '',
-      ]);
-    }));
-    return out;
-  };
-
   return {
     kpis: kpis.map(([label, value, sub]) => ({ label, value, sub })),
     showDay: !!selP || isDay,
@@ -163,7 +144,6 @@ export function buildAttendanceModel(S, AF, now) {
     firstCol: selP ? 'Date' : 'Person',
     person: selP,
     title: selP ? selP.name : isDay ? dayLong(dSel) : RANGE_TITLES[AF.range] || '',
-    csv,
     csvName: `mariox-attendance-${ymd(rng[0])}.csv`,
   };
 }

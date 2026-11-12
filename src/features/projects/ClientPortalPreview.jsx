@@ -7,6 +7,7 @@ import { BLUE, GREEN, MUTED } from '@/lib/color';
 import { dateTime, fd } from '@/lib/date';
 import { money } from '@/lib/format';
 import { CR_STATUS } from '@/config/constants';
+import { downloadDoc } from '@/api/files';
 import { usePrintCr } from './hooks/usePrintCr';
 import { PORTAL_HOST, badgeTone, val } from './lib/view';
 import s from './ClientPortalPreview.module.css';
@@ -26,8 +27,8 @@ function CrApproval({ c }) {
     const { pj } = useStore.getState();
     setPj({ [key]: { ...(pj[key] || {}), [c.id]: v } });
   };
-  const run = (act, ...args) => {
-    const err = crAct(c.id, act, note, ...args);
+  const run = async (act, ...args) => {
+    const err = await crAct(c.id, act, note, ...args);
     if (typeof err === 'string' && err) flash(err);
   };
 
@@ -62,8 +63,8 @@ function MilestoneApproval({ m }) {
   const clientDecide = useStore((st) => st.clientDecide);
   const flash = useStore((st) => st.flash);
 
-  const decide = (ok) => {
-    const err = clientDecide(m.id, ok, note);
+  const decide = async (ok) => {
+    const err = await clientDecide(m.id, ok, note);
     if (typeof err === 'string' && err) flash(err);
   };
 
@@ -210,7 +211,7 @@ export default function ClientPortalPreview() {
                   {docs.length > 0 && (
                     <div className={s.docs}>
                       {docs.map((d, i) => (
-                        <a key={`${d.name}-${i}`} className={s.doc} href={d.url} download={d.name}>
+                        <a key={d.id || `${d.name}-${i}`} className={s.doc} href={d.url} download={d.name} onClick={(e) => { e.preventDefault(); downloadDoc(d); }}>
                           {d.name} ↓
                         </a>
                       ))}

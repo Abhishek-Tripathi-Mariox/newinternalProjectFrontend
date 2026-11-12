@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStore } from '@/store';
 import { useNow } from '@/hooks/useNow';
 import { Button, Select, SegmentedControl } from '@/components/ui';
-import { downloadCsv } from '@/lib/download';
+import { download } from '@/api/client';
 import { today, ymd } from '@/lib/date';
 import RangeFilter from '@/features/attendance/shared/RangeFilter';
 import sh from '@/features/attendance/shared/shared.module.css';
@@ -23,6 +23,19 @@ export default function ReportsPage() {
   const [pop, setPop] = useState(null);
   const { RF, timeline: tl, log, popover } = useReportsModel(now, pop);
   const setRepF = useStore((st) => st.setRepF);
+  const flash = useStore((st) => st.flash);
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await download('/reports/hours-log/export.csv', { range: RF.range, date: RF.date, person: RF.person }, log.csvName);
+    } catch (e) {
+      flash(e.message);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const openPop = (seg, e) => {
     const W = window.innerWidth;
@@ -69,7 +82,7 @@ export default function ReportsPage() {
               onChange={(e) => setRepF({ person: e.target.value })}
             />
             <RangeFilter range={RF.range} date={RF.date || ymd(today())} onChange={setRepF} />
-            <Button variant="secondary" onClick={() => downloadCsv(log.csv, log.csvName)}>Export CSV</Button>
+            <Button variant="secondary" onClick={exportCsv} disabled={exporting} aria-busy={exporting || undefined}>{exporting ? 'Exporting…' : 'Export CSV'}</Button>
           </div>
         )}
       </div>

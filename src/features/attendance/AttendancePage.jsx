@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useStore } from '@/store';
 import { useNow } from '@/hooks/useNow';
 import { Button, Select, SearchInput } from '@/components/ui';
-import { downloadCsv } from '@/lib/download';
+import { download } from '@/api/client';
 import { today, ymd } from '@/lib/date';
 import KpiRow from './shared/KpiRow';
 import RangeFilter from './shared/RangeFilter';
@@ -24,9 +25,18 @@ export default function AttendancePage() {
     if ('range' in patch) setAttF({ range: patch.range, person: AF.person, exp: '' });
     else setAttF({ ...patch, exp: '' });
   };
-  const exportCsv = () => {
-    downloadCsv(m.csv(), m.csvName);
-    flash('Attendance exported');
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      await download('/attendance/export.csv', { range: AF.range, date: AF.date, team: AF.team, q: AF.q, person: AF.person }, m.csvName);
+      flash('Attendance exported');
+    } catch (e) {
+      flash(e.message);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -43,7 +53,7 @@ export default function AttendancePage() {
           <RangeFilter range={AF.range} date={AF.date || ymd(today())} onChange={onRange} />
           <Select compact value={AF.team} options={TEAM_OPTIONS} onChange={(e) => setAttF({ team: e.target.value })} />
           <SearchInput className={s.search} value={AF.q} onChange={(e) => setAttF({ q: e.target.value })} placeholder="Search person" />
-          <Button variant="secondary" onClick={exportCsv}>Export CSV</Button>
+          <Button variant="secondary" onClick={exportCsv} disabled={exporting} aria-busy={exporting || undefined}>{exporting ? 'Exporting…' : 'Export CSV'}</Button>
         </div>
       </div>
 

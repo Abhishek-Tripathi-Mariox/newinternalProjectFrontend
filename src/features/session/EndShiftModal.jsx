@@ -103,13 +103,16 @@ export default function EndShiftModal({ onClose, ...initial }) {
     pmRows: initial.pmRows || [],
   }));
   const [err, setErr] = useState(initial.err || '');
+  const [busy, setBusy] = useState(false);
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const bind = (k) => ({ value: form[k], onChange: (e) => set({ [k]: e.target.value }) });
 
-  const submit = () => {
-    const e = submitEndShift({ ...form, err: '' }, m.workedH);
-    if (e) { setErr(e); return; }
-    onClose?.();
+  const submit = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await submitEndShift({ ...form, err: '' });
+    // On success the session ends (this modal unmounts with it).
+    if (e) { setErr(e); setBusy(false); }
   };
 
   return (
@@ -124,7 +127,9 @@ export default function EndShiftModal({ onClose, ...initial }) {
           <span className={s.footNote}>Submitting ends your shift. The report appears in Attendance.</span>
           <div className={s.footBtns}>
             <Button variant="secondary" onClick={onClose}>Keep working</Button>
-            <Button variant="dark" onClick={submit}>Submit report &amp; end shift</Button>
+            <Button variant="dark" onClick={submit} disabled={busy} aria-busy={busy || undefined}>
+              {busy ? 'Submitting…' : <>Submit report &amp; end shift</>}
+            </Button>
           </div>
         </div>
       )}

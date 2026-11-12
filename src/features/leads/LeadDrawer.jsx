@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useStore } from '@/store';
 import { DocumentsPanel, Drawer, Select } from '@/components/ui';
 import FollowUpRow from '@/features/followups/components/FollowUpRow';
-import { OWNERS } from '@/config/constants';
 import { dLabel } from '@/lib/date';
 import { money } from '@/lib/format';
 import { useLeadInsights } from './useLeadInsights';
@@ -12,6 +11,7 @@ import LeadQuotes from './components/LeadQuotes';
 import LeadActivity from './components/LeadActivity';
 import sec from './components/DrawerSection.module.css';
 import s from './LeadDrawer.module.css';
+import { getActiveOwners } from '@/store/owners';
 
 /** Lead detail side panel. Reads `selLead` from the store; renders nothing when none is selected. */
 export default function LeadDrawer() {
@@ -35,6 +35,7 @@ function LeadDrawerBody({ lead: l, lfus, ins, now, leadMap, onClose }) {
   const selectLead = useStore((st) => st.selectLead);
   const mergeLead = useStore((st) => st.mergeLead);
   const setLeadDocs = useStore((st) => st.setLeadDocs);
+  const addLeadDocs = useStore((st) => st.addLeadDocs);
 
   const score = ins.scoreOf[l.id];
   const sp = ins.scorePill(score);
@@ -103,7 +104,7 @@ function LeadDrawerBody({ lead: l, lfus, ins, now, leadMap, onClose }) {
             <div className={s.ownerRow}>
               <span className={s.factLabel}>Owner</span>
               <Select unstyled value="" placeholder="Transfer…" onChange={transfer} className={s.transfer} aria-label="Transfer lead"
-                options={OWNERS.filter((o) => o.id !== l.owner).map((o) => ({ value: o.id, label: o.name }))} />
+                options={getActiveOwners().filter((o) => o.id !== l.owner).map((o) => ({ value: o.id, label: o.name }))} />
             </div>
             <div className={s.ownerName}>{ownerOf(l.owner).name}</div>
             <div className={s.factLabel}>First owner · <span className={s.firstOwner}>{ownerOf(l.firstOwner || l.owner).name}</span> · locked</div>
@@ -149,7 +150,7 @@ function LeadDrawerBody({ lead: l, lfus, ins, now, leadMap, onClose }) {
 
         <LeadActivity lead={l} fus={lfus} now={now} />
 
-        <DocumentsPanel docs={l.docs || []} onChange={(fn) => setLeadDocs(l.id, fn)} />
+        <DocumentsPanel docs={l.docs || []} onAddFiles={(files) => addLeadDocs(l.id, files)} onChange={(fn) => setLeadDocs(l.id, fn)} />
     </Drawer>
   );
 }

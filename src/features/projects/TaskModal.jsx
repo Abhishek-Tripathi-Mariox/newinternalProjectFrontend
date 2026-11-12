@@ -38,6 +38,7 @@ export default function TaskModal({ editId, p, a, st, onClose }) {
   const [form, setForm] = useState(() => initialForm(task, { p, a, st }, projects, milestones));
   const [newItem, setNewItem] = useState('');
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
   const set = (k) => (e) => { const v = e.target.value; setForm((f) => ({ ...f, [k]: v })); };
   const setCl = (fn) => setForm((f) => ({ ...f, cl: fn(f.cl) }));
   const addItem = () => {
@@ -54,12 +55,22 @@ export default function TaskModal({ editId, p, a, st, onClose }) {
   const doneN = form.cl.filter((x) => x.done).length;
   const isEdit = !!editId;
 
-  const save = () => {
-    const e = saveTask(form, editId || undefined);
+  const save = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await saveTask(form, editId || undefined);
+    setBusy(false);
     if (e) setErr(e);
     else onClose?.();
   };
-  const del = () => { delTask(editId); onClose?.(); };
+  const del = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await delTask(editId);
+    setBusy(false);
+    if (e) setErr(e);
+    else onClose?.();
+  };
 
   return (
     <Modal
@@ -70,10 +81,10 @@ export default function TaskModal({ editId, p, a, st, onClose }) {
       sub={isEdit && task ? `${task.id} · created ${fd(task.created || Date.now())}` : undefined}
       footer={(
         <div className={s.footer}>
-          <div>{isEdit && <Button variant="dangerOutline" onClick={del}>Delete task</Button>}</div>
+          <div>{isEdit && <Button variant="dangerOutline" onClick={del} disabled={busy}>Delete task</Button>}</div>
           <div className={s.footRight}>
             <Button onClick={onClose}>Cancel</Button>
-            <Button variant="primary" onClick={save}>{isEdit ? 'Save changes' : 'Create task'}</Button>
+            <Button variant="primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : isEdit ? 'Save changes' : 'Create task'}</Button>
           </div>
         </div>
       )}

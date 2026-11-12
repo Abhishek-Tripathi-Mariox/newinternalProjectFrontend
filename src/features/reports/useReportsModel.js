@@ -130,7 +130,7 @@ export function buildPopover(S, pop, now) {
   };
 }
 
-/** Hours log tab: per-day groups of event rows, KPIs and CSV rows. */
+/** Hours log tab: per-day groups of event rows and KPIs (CSV comes from the server). */
 export function buildHoursLog(S, RF, now) {
   const T = sod(now);
   const { isDay, day: rSel, rng } = resolveRange(RF, T);
@@ -143,7 +143,6 @@ export function buildHoursLog(S, RF, now) {
   let tb = 0;
   let pres = 0;
   let late = 0;
-  const csv = [];
 
   const days = rDays.map((d) => {
     const rows = [];
@@ -161,7 +160,6 @@ export function buildHoursLog(S, RF, now) {
       pres++;
       if (s.first > d + LATE_MS) late++;
       const { events } = narrateDay(list, s, d, now, 'log');
-      events.forEach((ev) => { if (!ev.now) csv.push([ymd(d), p.name, ev.raw, ev.time, ev.sub]); });
       rows.push({
         id: p.id, person: p, absent: false, events,
         brk: s.breaks.length ? `${s.breaks.length} · ${fmtDur(s.br)}` : 'None',
@@ -189,7 +187,6 @@ export function buildHoursLog(S, RF, now) {
       ['Late logins', late, 'after 10:30'],
     ].map(([label, value, sub]) => ({ label, value, sub })),
     people: ppl.slice().sort((a, b) => a.name.localeCompare(b.name)).map((p) => ({ value: p.id, label: p.name })),
-    csv: [['Date', 'Person', 'Event', 'Time', 'Note']].concat(csv),
     csvName: `mariox-hours-${ymd(T)}.csv`,
   };
 }

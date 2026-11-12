@@ -97,5 +97,3 @@ export const ATTENDANCE_RANGES = [
   ['month', 'This month'], ['30d', 'Last 30 days'], ['lastmonth', 'Last month'],
 ];
 
-/** Default password for seeded / invited accounts (demo only). */
-export const DEFAULT_PASSWORD = 'mariox123';

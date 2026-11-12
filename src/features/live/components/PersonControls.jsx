@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useStore } from '@/store';
 import { Button, Select } from '@/components/ui';
 import s from './TeamTable.module.css';
@@ -9,11 +10,18 @@ export default function PersonControls({ row }) {
   const toggleBreak = useStore((st) => st.toggleBreak);
   const startTimer = useStore((st) => st.startTimer);
   const stopTimer = useStore((st) => st.stopTimer);
+  const [busy, setBusy] = useState(false);
+  /** One request per row at a time (buttons disable while it runs). */
+  const act = (fn) => async () => {
+    if (busy) return;
+    setBusy(true);
+    try { await fn(); } finally { setBusy(false); }
+  };
 
   return (
     <div className={s.controls}>
-      {row.canIn && <Button variant="secondary" size="sm" onClick={() => checkIn(row.id)}>Check in</Button>}
-      {row.hasTimer && <Button variant="dangerOutline" size="sm" onClick={() => stopTimer(row.id)}>Stop timer</Button>}
+      {row.canIn && <Button variant="secondary" size="sm" disabled={busy} onClick={act(() => checkIn(row.id))}>Check in</Button>}
+      {row.hasTimer && <Button variant="dangerOutline" size="sm" disabled={busy} onClick={act(() => stopTimer(row.id))}>Stop timer</Button>}
       {row.canStart && (
         <Select
           compact
@@ -21,11 +29,12 @@ export default function PersonControls({ row }) {
           value=""
           placeholder="Start timer…"
           options={row.tasks}
-          onChange={(e) => { const v = e.target.value; if (v) startTimer(row.id, v); }}
+          disabled={busy}
+          onChange={(e) => { const v = e.target.value; if (v) act(() => startTimer(row.id, v))(); }}
         />
       )}
-      {row.canBreak && <Button variant="secondary" size="sm" onClick={() => toggleBreak(row.id)}>{row.brkLabel}</Button>}
-      {row.canOut && <Button variant="ghost" size="sm" className={s.outBtn} onClick={() => checkOut(row.id)}>Check out</Button>}
+      {row.canBreak && <Button variant="secondary" size="sm" disabled={busy} onClick={act(() => toggleBreak(row.id))}>{row.brkLabel}</Button>}
+      {row.canOut && <Button variant="ghost" size="sm" className={s.outBtn} disabled={busy} onClick={act(() => checkOut(row.id))}>Check out</Button>}
     </div>
   );
 }

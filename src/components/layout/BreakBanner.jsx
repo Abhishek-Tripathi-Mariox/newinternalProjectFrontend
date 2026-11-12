@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useStore } from '@/store';
 import { useNow } from '@/hooks/useNow';
 import { clock, fmtDur } from '@/lib/date';
@@ -9,10 +10,14 @@ export default function BreakBanner() {
   const { pid } = useSession();
   const a = useStore((x) => (pid && x.live && x.live.att ? x.live.att[pid] : null));
   const myBreak = useStore((x) => x.myBreak);
-  const now = useNow(15000);
+  const tick = useNow(15000);
+  const [busy, setBusy] = useState(false);
   if (!a || a.out || !a.brk) return null;
 
-  const el = now - a.brk;
+  // `tick` only drives the 15 s refresh; it can predate a break that just started, which made the
+  // elapsed time negative and the progress bar render full. Read the clock fresh, like the original.
+  const now = Math.max(tick, Date.now());
+  const el = Math.max(0, now - a.brk);
   const pl = (a.brkPlan || 0) * 6e4;
   const over = !!pl && el > pl;
   const title = `You’re on ${a.brkType ? `${a.brkType.toLowerCase()} break` : 'a break'}`;
@@ -35,7 +40,19 @@ export default function BreakBanner() {
         <div className={s.brkOf}>{pl ? `of ${fmtDur(pl)}` : 'elapsed'}</div>
         {over && <div className={s.brkOver}>{fmtDur(el - pl)} over</div>}
       </div>
-      <button type="button" className={s.resume} onClick={() => myBreak()}>End break &amp; resume work</button>
+      <button
+        type="button"
+        className={s.resume}
+        disabled={busy}
+        aria-busy={busy || undefined}
+        onClick={async () => {
+          if (busy) return;
+          setBusy(true);
+          try { await myBreak(); } finally { setBusy(false); }
+        }}
+      >
+        End break &amp; resume work
+      </button>
     </section>
   );
 }

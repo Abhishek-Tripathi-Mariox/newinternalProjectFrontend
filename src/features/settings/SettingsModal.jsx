@@ -5,8 +5,8 @@ import ManageLists from './ManageLists';
 import s from './SettingsModal.module.css';
 
 /**
- * Portal preferences (Super Admin, from the sidebar footer). Changes apply immediately and
- * persist via useSettings.
+ * Portal settings (Super Admin, from the sidebar footer). Changes apply immediately and are saved
+ * on the server for everyone (useSettings.set → PUT /settings); a rejection is rolled back.
  */
 export default function SettingsModal({ onClose }) {
   const { currency, defaultLeadsView, reminderAlerts, set } = useSettings();
@@ -16,7 +16,7 @@ export default function SettingsModal({ onClose }) {
   return (
     <Modal
       title="Portal settings"
-      sub="Applies to everyone using this browser."
+      sub="Applies to everyone using the portal."
       width={560}
       onClose={onClose}
       footer={<Button variant="primary" onClick={onClose}>Done</Button>}
@@ -26,9 +26,9 @@ export default function SettingsModal({ onClose }) {
           label="Currency"
           options={[['INR', 'INR (₹)'], ['USD', 'USD ($)']]}
           value={currency}
-          onChange={(v) => {
-            set({ currency: v });
-            flash?.(`Currency set to ${v}`);
+          onChange={async (v) => {
+            const e = await set({ currency: v });
+            flash?.(e || `Currency set to ${v}`);
           }}
         />
       </Field>
@@ -37,9 +37,10 @@ export default function SettingsModal({ onClose }) {
           label="Default leads view"
           options={[['Kanban', 'Board'], ['Table', 'Table']]}
           value={defaultLeadsView}
-          onChange={(v) => {
-            set({ defaultLeadsView: v });
+          onChange={async (v) => {
             setLeadView?.(v === 'Table' ? 'table' : 'kanban');
+            const e = await set({ defaultLeadsView: v });
+            if (e) flash?.(e);
           }}
         />
       </Field>
@@ -48,7 +49,7 @@ export default function SettingsModal({ onClose }) {
           <div className={s.rowTitle} id="set-reminders">Reminder alerts</div>
           <div className={s.rowSub}>Pop up a reminder before follow-ups are due.</div>
         </div>
-        <Toggle aria-labelledby="set-reminders" checked={reminderAlerts} onChange={(v) => set({ reminderAlerts: v })} />
+        <Toggle aria-labelledby="set-reminders" checked={reminderAlerts} onChange={async (v) => { const e = await set({ reminderAlerts: v }); if (e) flash?.(e); }} />
       </div>
       <div className={s.section}>
         <div className={s.sectionTitle}>Manage lists</div>

@@ -1,7 +1,7 @@
-import { OWNERS } from '@/config/constants';
 import { DAY, fd } from '@/lib/date';
 import { escapeHtml as esc, printHtml } from '@/lib/download';
 import { inr } from '@/lib/format';
+import { getOwners } from '@/store/owners';
 
 /** Quote totals: subtotal, discount, net, 18% GST and total. */
 export function qTotals(q) {
@@ -18,7 +18,7 @@ export function qTotals(q) {
  */
 export function printQuote(l, q) {
   const t = qTotals(q);
-  const o = OWNERS.find((x) => x.id === l.owner) || { name: 'Unassigned' };
+  const o = getOwners().find((x) => x.id === l.owner) || { name: 'Unassigned' };
   const rows = q.items.map((i, n) => `<tr><td>${n + 1}</td><td>${esc(i.d)}</td><td class=r>${esc(i.q)}</td><td class=r>${inr(i.r)}</td><td class=r>${inr((+i.q || 0) * (+i.r || 0))}</td></tr>`).join('');
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>${q.id} · ${esc(l.company)}</title><style>body{font:13px/1.55 -apple-system,Helvetica,Arial,sans-serif;color:#1d2230;margin:48px}h1{font-size:26px;margin:2px 0 0}table{width:100%;border-collapse:collapse;margin-top:28px}th{text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#667;border-bottom:1.5px solid #1d2230;padding:8px 6px}td{padding:10px 6px;border-bottom:1px solid #e4e4e8;vertical-align:top}.r{text-align:right}.top{display:flex;justify-content:space-between;gap:24px}.m{color:#667}.tot td{border:0;padding:4px 6px}.g td{font-size:16px;font-weight:700;border-top:1.5px solid #1d2230;padding-top:10px}@media print{body{margin:16px}}</style></head><body>`
     + `<div class=top><div><div class=m>QUOTATION</div><h1>Mariox Software</h1></div><div class=r><b>${q.id}</b><br><span class=m>Date</span> ${fd(q.created)}<br><span class=m>Valid until</span> ${fd(q.created + q.valid * DAY)}</div></div>`

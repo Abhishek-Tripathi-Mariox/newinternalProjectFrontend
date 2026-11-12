@@ -1,5 +1,4 @@
 import { useStore } from '@/store';
-import { printQuote } from '@/domain/quotes';
 import { dLabel } from '@/lib/date';
 import { money } from '@/lib/format';
 import { quoteTone } from '../leadUtils';
@@ -11,9 +10,9 @@ const STAMPS = [['Created', 'created'], ['Sent', 'sentAt'], ['Viewed', 'viewedAt
 export default function LeadQuotes({ lead }) {
   const openModal = useStore((st) => st.openModal);
   const setQuote = useStore((st) => st.setQuote);
-  const flash = useStore((st) => st.flash);
+  const printQuote = useStore((st) => st.printQuote);
   const qs = lead.quotes || [];
-  const pdf = (q) => { if (printQuote(lead, q) === false) flash('Allow pop-ups to download the quote PDF'); };
+  const pdf = (q) => printQuote(lead.id, q.id);
 
   return (
     <div>

@@ -38,8 +38,8 @@ export default function CrSection({ project: sp }) {
     (id, act) => {
       // "Mark approved" needs the client signer's name → handled inside the CR modal.
       if (act === 'approve') return openModal('cr', { pid: sp.id, editId: id });
-      const err = crAct(id, act);
-      if (typeof err === 'string' && err) flash(err);
+      crAct(id, act).then((err) => { if (typeof err === 'string' && err) flash(err); });
+      return undefined;
     },
     [crAct, flash, openModal, sp.id],
   );

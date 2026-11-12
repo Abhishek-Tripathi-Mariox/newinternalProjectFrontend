@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '@/store';
 import { useNow } from '@/hooks/useNow';
-import { Modal, Button, Field, Input } from '@/components/ui';
+import { Modal, Button, Field, Input, ErrorText } from '@/components/ui';
 import { BREAK_TYPES } from '@/config/constants';
 import { clock, MINUTE } from '@/lib/date';
 import s from './BreakModal.module.css';
@@ -12,10 +12,15 @@ export default function BreakModal({ pid, onClose }) {
   const startBreak = useStore((st) => st.startBreak);
   const [type, setType] = useState('Lunch');
   const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
   const mins = (BREAK_TYPES.find((b) => b[0] === type) || [0, 15])[1];
 
-  const start = () => {
-    startBreak(pid, type, note);
+  const start = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await startBreak(pid, type, note);
+    if (e) { setErr(e); setBusy(false); return; }
     onClose?.();
   };
 
@@ -29,7 +34,7 @@ export default function BreakModal({ pid, onClose }) {
       footer={(
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button className={s.start} onClick={start}>Start break</Button>
+          <Button className={s.start} onClick={start} disabled={busy} aria-busy={busy || undefined}>{busy ? 'Starting…' : 'Start break'}</Button>
         </>
       )}
     >
@@ -53,6 +58,7 @@ export default function BreakModal({ pid, onClose }) {
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Reachable on phone" />
         </Field>
         <div className={s.back}>You’ll be shown as on break. Back by {clock(now + mins * MINUTE)}.</div>
+        {err && <ErrorText>{err}</ErrorText>}
       </div>
     </Modal>
   );

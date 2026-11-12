@@ -1,11 +1,12 @@
 import { useStore } from '@/store';
 import { DateRangeFilter, SearchInput, Select, Toolbar } from '@/components/ui';
-import { LEAD_DATE_PRESETS, OWNERS } from '@/config/constants';
+import { LEAD_DATE_PRESETS } from '@/config/constants';
 import { useLeadStatusNames, useMasters, useServices, useSources } from '@/store/masters';
 import { EMPTY_LF, val } from '../leadUtils';
 import s from './LeadsFilters.module.css';
+import { getOwners } from '@/store/owners';
 
-const ownerOpts = [{ value: '', label: 'All owners' }, ...OWNERS.map((o) => ({ value: o.id, label: o.name }))];
+const ownerOpts = () => [{ value: '', label: 'All owners' }, ...getOwners().map((o) => ({ value: o.id, label: o.name }))];
 const withAll = (label, list) => [{ value: '', label }, ...list.map((k) => ({ value: k, label: k }))];
 
 /** Normalise a DateRangeFilter patch to the `lf` keys ({date, from, to}). */
@@ -39,7 +40,7 @@ export default function LeadsFilters() {
     <Toolbar>
       <SearchInput value={lf.q} onChange={set('q')} placeholder="Search leads…" title="Search by company, contact, email or lead ID" className={s.search} />
       <DateRangeFilter presets={LEAD_DATE_PRESETS} value={lf.date} from={lf.from} to={lf.to} onChange={(p) => setLf(datePatch(p))} />
-      <Select value={lf.owner} onChange={set('owner')} options={ownerOpts} />
+      <Select value={lf.owner} onChange={set('owner')} options={ownerOpts()} />
       <Select value={lf.status} onChange={set('status')} options={withAll('All statuses', stages)} createLabel="Add stage" onCreate={create('status', addLeadStatus)} />
       <Select value={lf.source} onChange={set('source')} options={withAll('All sources', sources)} createLabel="Add source" onCreate={create('source', addSource)} />
       <Select value={lf.service} onChange={set('service')} options={withAll('All services', services)} createLabel="Add service" onCreate={create('service', addService)} />

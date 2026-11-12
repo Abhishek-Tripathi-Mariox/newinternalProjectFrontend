@@ -4,7 +4,7 @@ import { Modal, Field, Input, Select, Checkbox, Button, ErrorText } from '@/comp
 import { RED } from '@/lib/color';
 import { ago, today, ymd } from '@/lib/date';
 import {
-  DEPARTMENTS, MANAGER_ROLES, OWNER_ID, ROLE_DEPT,
+  DEPARTMENTS, MANAGER_ROLES, ROLE_DEPT, isProtectedUser,
   checkedOf, isDeliveryRole, roleSummary, valueOf,
 } from './users.utils';
 import s from './UserModal.module.css';
@@ -13,8 +13,8 @@ const EMPTY = [];
 const DANGER_TEXT = 'oklch(0.5 0.17 25)';
 const OK_TEXT = 'oklch(0.42 0.12 150)';
 
-/** Initial form — same fields as the original `openUser()` modal state. */
-function initialForm(user) {
+/** Initial form — same fields as the original `openUser()` modal state. New users report to `defaultManager`. */
+function initialForm(user, defaultManager = '') {
   if (user) {
     return {
       name: user.name, email: user.email, phone: user.phone || '', title: user.title || '', role: user.role,
@@ -22,7 +22,7 @@ function initialForm(user) {
     };
   }
   return {
-    name: '', email: '', phone: '', title: '', role: 'r-tm', dept: 'Web', reports: 'u-mj',
+    name: '', email: '', phone: '', title: '', role: 'r-tm', dept: 'Web', reports: defaultManager,
     join: ymd(today()), shift: '8', sendInvite: true,
   };
 }
@@ -37,9 +37,15 @@ export default function UserModal({ editId, onClose }) {
   const resetPassword = useStore((st) => st.resetPassword);
   const forceLogout = useStore((st) => st.forceLogout);
 
+  const myId = useStore((st) => st.auth?.uid);
   const ed = editId ? users.find((u) => u.id === editId) : null;
-  const [form, setForm] = useState(() => initialForm(ed));
+  // New people report to whoever invites them, when that person is a manager.
+  const [form, setForm] = useState(() => {
+    const me = users.find((u) => u.id === myId);
+    return initialForm(ed, me && MANAGER_ROLES.includes(me.role) ? me.id : '');
+  });
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState('');
 
   const roleMap = useMemo(() => Object.fromEntries(roles.map((r) => [r.id, r])), [roles]);
   const role = roleMap[form.role];
@@ -66,19 +72,21 @@ export default function UserModal({ editId, onClose }) {
     });
   };
 
-  const save = () => {
-    const error = saveUser(form, ed ? ed.id : undefined);
-    if (error) return setErr(error);
-    onClose();
+  /** Run one async action at a time; `key` names the button showing the busy state. */
+  const withBusy = (key, fn) => async () => {
+    if (busy) return;
+    setBusy(key);
+    try { await fn(); } finally { setBusy(''); }
   };
-  const toggleStatus = () => {
-    setUserStatus(ed.id, ed.status === 'Deactivated' ? 'Active' : 'Deactivated');
+  const save = withBusy('save', async () => {
+    const error = await saveUser(form, ed ? ed.id : undefined);
+    if (error) { setErr(error); return; }
     onClose();
-  };
-  const remove = () => {
-    delUser(ed.id);
-    onClose();
-  };
+  });
+  const toggleStatus = withBusy('status', () => setUserStatus(ed.id, ed.status === 'Deactivated' ? 'Active' : 'Deactivated'));
+  const remove = withBusy('remove', () => delUser(ed.id));
+  const reset = withBusy('reset', () => resetPassword(ed.id));
+  const signOut = withBusy('signout', () => forceLogout(ed.id));
 
   const nameBad = !!err && !form.name.trim();
   const emailBad = !!err && /email/i.test(err);
@@ -86,16 +94,16 @@ export default function UserModal({ editId, onClose }) {
 
   const meta = ed
     ? `${ed.email} · ${ed.status}${ed.last ? ` · last active ${ago(ed.last).toLowerCase()}` : ''}`
-    : 'They’ll get an email to set their password';
-  const canToggle = !!ed && ed.id !== OWNER_ID && ed.status !== 'Invited';
-  const canDelete = !!ed && ed.id !== OWNER_ID && ed.status !== 'Active';
+    : 'They’ll get an email with a link to set their password';
+  const canToggle = !!ed && !isProtectedUser(ed, myId) && ed.status !== 'Invited';
+  const canDelete = !!ed && !isProtectedUser(ed, myId) && ed.status !== 'Active';
   const saveLabel = ed ? 'Save changes' : form.sendInvite ? 'Send invite' : 'Add user';
 
   const footer = (
     <div className={s.footer}>
       <div>
         {canDelete && (
-          <Button variant="dangerOutline" onClick={remove}>
+          <Button variant="dangerOutline" onClick={remove} disabled={!!busy}>
             {ed.status === 'Invited' ? 'Cancel invite' : 'Delete user'}
           </Button>
         )}
@@ -104,8 +112,8 @@ export default function UserModal({ editId, onClose }) {
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={save}>
-          {saveLabel}
+        <Button variant="primary" onClick={save} disabled={!!busy} aria-busy={busy === 'save' || undefined}>
+          {busy === 'save' ? 'Saving…' : saveLabel}
         </Button>
       </div>
     </div>
@@ -161,16 +169,16 @@ export default function UserModal({ editId, onClose }) {
             <Checkbox
               checked={!!form.sendInvite}
               onChange={(e) => setForm((f) => ({ ...f, sendInvite: checkedOf(e) }))}
-              label="Email an invite link so they can set a password"
+              label="Send an invite so they can set a password"
             />
           </div>
         )}
         {ed && (
           <div className={`${s.full} ${s.accountActions}`}>
-            <Button variant="secondary" size="sm" onClick={() => resetPassword(ed.id)}>
+            <Button variant="secondary" size="sm" onClick={reset} disabled={!!busy}>
               Send password reset
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => forceLogout(ed.id)}>
+            <Button variant="secondary" size="sm" onClick={signOut} disabled={!!busy}>
               Sign out of all devices
             </Button>
             {canToggle && (
@@ -179,6 +187,7 @@ export default function UserModal({ editId, onClose }) {
                 size="sm"
                 style={{ color: ed.status === 'Deactivated' ? OK_TEXT : DANGER_TEXT }}
                 onClick={toggleStatus}
+                disabled={!!busy}
               >
                 {ed.status === 'Deactivated' ? 'Reactivate user' : 'Deactivate user'}
               </Button>

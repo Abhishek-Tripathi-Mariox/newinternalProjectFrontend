@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useStore } from '@/store';
 import { useScoped } from '@/hooks/useScoped';
 import { Button, Checkbox, Field, Input, Modal, Select, Textarea, Toggle, ErrorText } from '@/components/ui';
-import { FU_TYPES, OWNERS, PRIORITY_NAMES, REMINDERS } from '@/config/constants';
+import { FU_TYPES, PRIORITY_NAMES, REMINDERS } from '@/config/constants';
 import { RED } from '@/lib/color';
 import { HOUR, MINUTE, hm, ymd } from '@/lib/date';
 import { genMeet } from '@/lib/random';
@@ -10,8 +10,9 @@ import { calendarLink } from './calendarLink';
 import { useCopyMeet } from './useCopyMeet';
 import { TYPE_NAMES, typeDefaults } from './model';
 import s from './FollowUpModal.module.css';
+import { firstOwnerId, getActiveOwners } from '@/store/owners';
 
-const OWNER_OPTS = OWNERS.map((o) => ({ value: o.id, label: o.name }));
+const OWNER_OPTS = () => getActiveOwners().map((o) => ({ value: o.id, label: o.name }));
 const PRIO_OPTS = PRIORITY_NAMES.map((p) => ({ value: p, label: p }));
 const REMIND_OPTS = REMINDERS.map(([v, l]) => ({ value: String(v), label: l }));
 const DUR_OPTS = [
@@ -32,7 +33,7 @@ function initialForm({ editId, leadId, date }, fus, leads) {
   const l = leads.find((x) => x.id === leadId);
   const t = Math.ceil((Date.now() + 30 * MINUTE) / HOUR) * HOUR;
   return {
-    type: 'Meeting', title: '', leadId: leadId || '', owner: l ? l.owner : OWNERS[0].id,
+    type: 'Meeting', title: '', leadId: leadId || '', owner: l ? l.owner : firstOwnerId(),
     date: date || ymd(t), time: hm(t), dur: '45', prio: 'Medium', remind: '10', meet: true, meetUrl: genMeet(),
     attendees: l ? l.email || '' : '', notes: '', openCal: false,
   };
@@ -47,6 +48,7 @@ export default function FollowUpModal({ editId, leadId, date, onClose }) {
 
   const [form, setForm] = useState(() => initialForm({ editId, leadId, date }, allFus, leads));
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
   const isEdit = !!editId;
 
   const leadOpts = useMemo(
@@ -71,21 +73,28 @@ export default function FollowUpModal({ editId, leadId, date, onClose }) {
     patch(l ? { leadId: id, owner: l.owner, attendees: l.email } : { leadId: id });
   };
 
-  const save = () => {
+  const save = async () => {
+    if (busy) return;
     // Same checks as the store (kept here so the title border reacts instantly).
     if (!form.title.trim()) return setErr('Add a title.');
     if (!form.date || !form.time) return setErr('Pick a date and time.');
-    // openCal is handled here (needs a user gesture for window.open), not by the store.
+    // openCal is handled here: the tab is opened during the click (pop-up blockers), filled after the save.
     const { openCal, ...data } = form;
-    const e = saveFu(data, editId || undefined);
-    if (e) return setErr(e);
-    if (openCal) {
+    const cal = openCal ? window.open('', '_blank') : null;
+    setBusy(true);
+    const e = await saveFu(data, editId || undefined);
+    setBusy(false);
+    if (e) {
+      if (cal) cal.close();
+      return setErr(e);
+    }
+    if (cal) {
       const due = new Date(`${form.date}T${form.time}`).getTime();
       const saved = {
         title: form.title.trim(), due, dur: +form.dur, notes: form.notes,
         meet: form.meet ? form.meetUrl.trim() : '', attendees: form.attendees,
       };
-      window.open(calendarLink(saved, leads.find((l) => l.id === form.leadId)), '_blank');
+      cal.location.href = calendarLink(saved, leads.find((l) => l.id === form.leadId));
     }
     onClose();
   };
@@ -99,7 +108,7 @@ export default function FollowUpModal({ editId, leadId, date, onClose }) {
       />
       <div className={s.footerBtns}>
         <Button variant="secondary" onClick={onClose}>Cancel</Button>
-        <Button variant="primary" onClick={save}>{isEdit ? 'Save changes' : 'Schedule'}</Button>
+        <Button variant="primary" onClick={save} disabled={busy} aria-busy={busy}>{isEdit ? 'Save changes' : 'Schedule'}</Button>
       </div>
     </div>
   );
@@ -141,7 +150,7 @@ export default function FollowUpModal({ editId, leadId, date, onClose }) {
             <Select value={form.leadId} onChange={onLead} options={leadOpts} />
           </Field>
           <Field label="Assign to">
-            <Select {...bind('owner')} options={OWNER_OPTS} />
+            <Select {...bind('owner')} options={OWNER_OPTS()} />
           </Field>
         </div>
 

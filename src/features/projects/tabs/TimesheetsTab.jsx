@@ -3,15 +3,13 @@ import { useStore } from '@/store';
 import { useProjectsModel } from '@/hooks/useProjectsModel';
 import { Button, DataTable, Pagination, SegmentedControl, usePagination } from '@/components/ui';
 import { INK, projectColor } from '@/lib/color';
-import { dLabel, ymd } from '@/lib/date';
-import { downloadCsv } from '@/lib/download';
+import { dLabel } from '@/lib/date';
 import { hh } from '@/lib/format';
 import { MiniAvatar } from '../components/TaskCard';
 import { memberAvatar } from '../workItems';
 import s from './WorkTabs.module.css';
 
 const VIEWS = [['entries', 'Entries'], ['matrix', 'Member × project']];
-const CSV_HEAD = ['Date', 'Member', 'Team', 'Project', 'Milestone', 'Hours', 'Work done'];
 
 /**
  * Timesheets tab: filtered entries (paginated, deletable) or a member × project
@@ -21,6 +19,7 @@ export default function TimesheetsTab() {
   const pj = useStore((st) => st.pj);
   const setPj = useStore((st) => st.setPj);
   const delLog = useStore((st) => st.delLog);
+  const exportTimesheets = useStore((st) => st.exportTimesheets);
   const flash = useStore((st) => st.flash);
   const { LF, inR, pF, memF, g, hk, MEM, PRJ, MSS, periodLabel } = useProjectsModel();
   const view = pj.tsView === 'matrix' ? 'matrix' : 'entries';
@@ -49,10 +48,8 @@ export default function TimesheetsTab() {
     setPj({ tsView: 'entries', f: { ...cur.f, member: mid, project: pid } });
   };
 
-  const exportCsv = () => {
-    const rows = ents.map((l) => [ymd(l.d), (MEM[l.m] || {}).name, (MEM[l.m] || {}).team, (PRJ[l.p] || {}).name, (MSS[l.ms] || {}).name, l.h, l.note]);
-    downloadCsv([CSV_HEAD, ...rows], `mariox-timesheets-${ymd(Date.now())}.csv`, { bom: false });
-    flash(`Exported ${rows.length} entries`);
+  const exportCsv = async () => {
+    if (await exportTimesheets(pj.f)) flash(`Exported ${ents.length} entries`);
   };
 
   const columns = [

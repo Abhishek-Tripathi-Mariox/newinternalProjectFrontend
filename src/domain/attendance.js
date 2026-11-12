@@ -1,5 +1,5 @@
-import { OWNERS } from '@/config/constants';
 import { sod } from '@/lib/date';
+import { getActiveOwners } from '@/store/owners';
 
 /**
  * Everyone tracked by Live / Attendance / Reports: delivery members followed
@@ -7,8 +7,8 @@ import { sod } from '@/lib/date';
  * @returns {{id,name,role,h,sales,shift}[]}
  */
 export function people(state) {
-  return (state.members || []).map((x) => ({ id: x.id, name: x.name, role: `${x.role} · ${x.team}`, h: x.h, sales: false, shift: x.shift || 8 }))
-    .concat(OWNERS.map((o) => ({ id: o.id, name: o.name, role: 'Sales', h: o.h, sales: true, shift: 8 })));
+  return (state.members || []).filter((x) => !x.inactive).map((x) => ({ id: x.id, name: x.name, role: `${x.role} · ${x.team}`, h: x.h, sales: false, shift: x.shift || 8 }))
+    .concat(getActiveOwners().map((o) => ({ id: o.id, name: o.name, role: 'Sales', h: o.h, sales: true, shift: 8 })));
 }
 
 /** Group attendance events in [from, to) by `who|day`, each list sorted by time. */

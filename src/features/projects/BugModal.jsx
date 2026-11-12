@@ -8,6 +8,7 @@ import { DAY, dLabel, fd, parseDay, ymd } from '@/lib/date';
 import { fileSize } from '@/lib/format';
 import { BUG_ENVS, BUG_SEVERITY, BUG_SEVERITY_DAYS, PRIORITY_NAMES, TEAMS } from '@/config/constants';
 import { BUG_STATUS_KEYS } from './workItems';
+import { downloadDoc, openDoc, useFileUrl } from '@/api/files';
 import { useAttach } from './hooks/useAttach';
 import s from './WorkModals.module.css';
 
@@ -28,10 +29,13 @@ function initialForm(bug, pre, projects, milestones) {
 function AttachmentTile({ att, onRemove }) {
   const ext = (att.name.split('.').pop() || 'file').toUpperCase().slice(0, 4);
   const img = /^image\//.test(att.type || '') && !!att.url;
+  const src = useFileUrl(att, img);
+  const open = (e) => { e.preventDefault(); openDoc(att); };
+  const dl = (e) => { e.preventDefault(); downloadDoc(att); };
   return (
     <div className={s.att}>
       {img ? (
-        <a href={att.url} target="_blank" rel="noreferrer" title="Open full size" className={s.thumb}><img src={att.url} alt={att.name} /></a>
+        <a href={att.url} target="_blank" rel="noreferrer" title="Open full size" className={s.thumb} onClick={open}>{src ? <img src={src} alt={att.name} /> : null}</a>
       ) : (
         <div className={s.extBox}><span className={s.ext}>{ext}</span></div>
       )}
@@ -40,7 +44,7 @@ function AttachmentTile({ att, onRemove }) {
           <div className={s.attName} title={att.name}>{att.name}</div>
           <div className={s.attSize}>{fileSize(att.size)}{att.url ? '' : ' · name only (too large to store)'}</div>
         </div>
-        {att.url && <a href={att.url} download={att.name} title="Download" className={s.dl}>↓</a>}
+        {att.url && <a href={att.url} download={att.name} title="Download" className={s.dl} onClick={dl}>↓</a>}
         <button type="button" className={s.rm} title="Remove" onClick={onRemove}>✕</button>
       </div>
     </div>
@@ -51,7 +55,7 @@ function AttachmentTile({ att, onRemove }) {
 export default function BugModal({ editId, p, onClose }) {
   const saveBug = useStore((x) => x.saveBug);
   const delBug = useStore((x) => x.delBug);
-  const updBug = useStore((x) => x.updBug);
+  const commentBug = useStore((x) => x.commentBug);
   const milestones = useStore((x) => x.milestones);
   const bug = useStore((x) => (editId ? (x.bugs || []).find((b) => b.id === editId) : null));
   const scoped = useScoped();
@@ -63,6 +67,7 @@ export default function BugModal({ editId, p, onClose }) {
   const [comment, setComment] = useState('');
   const [drag, setDrag] = useState(false);
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
   const set = (k) => (e) => { const v = e.target.value; setForm((f) => ({ ...f, [k]: v })); };
   const isEdit = !!editId;
 
@@ -86,11 +91,12 @@ export default function BugModal({ editId, p, onClose }) {
   };
   const addFiles = (files) => attach(files, (atts) => setForm((f) => ({ ...f, atts: (f.atts || []).concat(atts) })));
   const removeAtt = (i) => setForm((f) => ({ ...f, atts: f.atts.filter((_, j) => j !== i) }));
-  const addComment = () => {
+  const addComment = async () => {
     const v = comment.trim();
     if (!v || !editId) return;
-    updBug(editId, {}, `Comment: ${v}`);
     setComment('');
+    const e = await commentBug(editId, v);
+    if (e) setComment(v);
   };
 
   const pp = PRJ[form.p];
@@ -100,12 +106,22 @@ export default function BugModal({ editId, p, onClose }) {
   const atts = form.atts || [];
   const history = (bug ? bug.log || [] : []).slice().reverse();
 
-  const save = () => {
-    const e = saveBug(form, editId || undefined);
+  const save = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await saveBug(form, editId || undefined);
+    setBusy(false);
     if (e) setErr(e);
     else onClose?.();
   };
-  const del = () => { delBug(editId); onClose?.(); };
+  const del = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await delBug(editId);
+    setBusy(false);
+    if (e) setErr(e);
+    else onClose?.();
+  };
 
   return (
     <Modal
@@ -116,10 +132,10 @@ export default function BugModal({ editId, p, onClose }) {
       sub={isEdit ? `Reported ${fd(bug ? bug.repDate : Date.now())}` : 'Log the issue with enough detail for the developer to reproduce it'}
       footer={(
         <div className={s.footer}>
-          <div>{isEdit && <Button variant="dangerOutline" onClick={del}>Delete bug</Button>}</div>
+          <div>{isEdit && <Button variant="dangerOutline" onClick={del} disabled={busy}>Delete bug</Button>}</div>
           <div className={s.footRight}>
             <Button onClick={onClose}>Cancel</Button>
-            <Button variant="danger" onClick={save}>{isEdit ? 'Save changes' : 'Report bug'}</Button>
+            <Button variant="danger" onClick={save} disabled={busy}>{busy ? 'Saving…' : isEdit ? 'Save changes' : 'Report bug'}</Button>
           </div>
         </div>
       )}

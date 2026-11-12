@@ -34,6 +34,7 @@ export default function LogHoursModal({ member, project, date, onClose }) {
     return { member: mid, date: ymd(date || Date.now()), rows: rowsFor(projects, milestones, mid, project) };
   });
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const setRow = (i, patch) => setForm((f) => ({ ...f, rows: f.rows.map((r, j) => (j === i ? { ...r, ...patch } : r)) }));
   const removeRow = (i) => setForm((f) => ({ ...f, rows: f.rows.length > 1 ? f.rows.filter((_, j) => j !== i) : [{ ...BLANK }] }));
@@ -53,8 +54,11 @@ export default function LogHoursModal({ member, project, date, onClose }) {
   const state = all === 0 ? 'Nothing entered' : all < sh ? `Short by ${hh(sh - all)}` : all === sh ? 'Full shift' : `Overtime +${hh(all - sh)}`;
   const stateColor = all === 0 ? MUTED : all < sh ? AMBER : all === sh ? GREEN : OVERTIME;
 
-  const save = () => {
-    const e = saveLog(form);
+  const save = async () => {
+    if (busy) return;
+    setBusy(true);
+    const e = await saveLog(form);
+    setBusy(false);
     if (e) setErr(e);
     else onClose?.();
   };
@@ -69,7 +73,7 @@ export default function LogHoursModal({ member, project, date, onClose }) {
       footer={(
         <div className={s.footerEnd}>
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={save}>Save hours</Button>
+          <Button variant="primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save hours'}</Button>
         </div>
       )}
     >

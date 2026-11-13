@@ -18,6 +18,8 @@ const MS_KEYS = Object.keys(MILESTONE_STATUS);
  */
 function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberId, logs, memberById, onUpdate, onDelete, onTeam, onToggle, onToggleMember }) {
   const [picking, setPicking] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const notes = m.notes || '';
   const team = m.team || [];
   const toggleTeam = (id) => onTeam && onTeam(m.id, team.includes(id) ? team.filter((x) => x !== id) : team.concat(id));
   const pct = m.alloc ? used / m.alloc : 0;
@@ -138,9 +140,39 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
           </span>
         </div>
 
-        <button type="button" className={s.toggle} onClick={() => onToggle(m.id)}>
-          {open ? 'Hide member breakdown ▴' : `Who logged these ${hh(used)} ▾`}
-        </button>
+        {notes && !notesOpen && (
+          <button type="button" className={s.notePreview} onClick={() => setNotesOpen(true)} title="Open notes">
+            📝 {notes.length > 140 ? `${notes.slice(0, 140)}…` : notes}
+          </button>
+        )}
+        {notesOpen && (
+          <div className={s.notesBox}>
+            {canEdit ? (
+              <textarea
+                className={s.notesInput}
+                rows={3}
+                value={notes}
+                placeholder="Scope, decisions, client feedback, links… (saved as you type)"
+                aria-label={`${m.name} notes`}
+                onChange={(e) => onUpdate(m.id, { notes: e.target.value })}
+                autoFocus
+              />
+            ) : (
+              <div className={s.notesRead}>{notes || 'No notes yet.'}</div>
+            )}
+          </div>
+        )}
+
+        <div className={s.links}>
+          <button type="button" className={s.toggle} onClick={() => onToggle(m.id)}>
+            {open ? 'Hide member breakdown ▴' : `Who logged these ${hh(used)} ▾`}
+          </button>
+          {(canEdit || notes) && (
+            <button type="button" className={s.toggle} onClick={() => setNotesOpen((x) => !x)}>
+              {notesOpen ? 'Close notes ▴' : notes ? 'Notes ▾' : '+ Add notes'}
+            </button>
+          )}
+        </div>
 
         {open && (
           <div className={s.breakdown}>

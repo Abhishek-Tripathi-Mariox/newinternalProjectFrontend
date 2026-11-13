@@ -58,3 +58,4 @@
 
 .empty { padding: 10px 0; font-size: 13px; color: var(--muted); }
 .emptyBox { padding: 40px; text-align: center; font-size: 13.5px; color: var(--muted); }
+.cardStart { color: var(--muted); }

@@ -27,10 +27,11 @@ export function fromApiProject(p, prev) {
   const team = p.pmId ? [p.pmId].concat(ids.filter((x) => x !== p.pmId)) : ids;
   const alloc = {};
   (p.team || []).forEach((t) => { alloc[t.memberId] = t.allocHours || 0; });
+  const primary = (p.team || []).filter((t) => t.primary).map((t) => t.memberId);
   const docs = Array.isArray(p.documents) ? p.documents.map(fromApiDoc) : (prev && prev.docs) || [];
   return {
-    id: p.id, name: p.name, client: p.client, clientEmail: p.clientEmail || '', service: (p.services || []).join(', '), status: p.status, pm: p.pmId, team,
-    start: dayMs(p.startDate), due: dayMs(p.dueDate), budgetHours: p.budgetHours ?? null, value: p.value || 0, h: p.hue, prio: p.priority || 'Medium', alloc,
+    id: p.id, primary, name: p.name, client: p.client, clientEmail: p.clientEmail || '', service: (p.services || []).join(', '), status: p.status, pm: p.pmId, team,
+    start: dayMs(p.startDate), due: dayMs(p.dueDate), budgetHours: p.budgetLimit ?? null, value: p.value || 0, h: p.hue, prio: p.priority || 'Medium', alloc,
     brief: p.brief || '', links: (p.links || []).map((l) => ({ type: l.type, url: l.url })), docs,
     portal: p.portal ? { on: !!p.portal.on, ...(p.portal.token ? { token: p.portal.token } : {}) } : { on: false },
   };
@@ -41,6 +42,7 @@ export function fromApiMilestone(m) {
   return {
     id: m.id, p: m.projectId, n: m.n, name: m.name, alloc: m.allocHours || 0, due: dayMs(m.dueDate), status: m.status,
     team: m.team || [],
+    notes: m.notes || '',
     ...(m.crId ? { cr: m.crId } : {}),
     ...(a && a.status ? { appr: { st: a.status, asked: tms(a.askedAt), at: tms(a.at), note: a.note || '' } } : {}),
   };
@@ -83,7 +85,7 @@ const PROJECT_FIELDS = { name: 'name', client: 'client', clientEmail: 'clientEma
 export function toApiProjectPatch(patch) {
   const b = {};
   Object.entries(PROJECT_FIELDS).forEach(([k, f]) => { if (patch[k] !== undefined) b[f] = patch[k]; });
-  if (patch.budgetHours !== undefined) b.budgetHours = Math.max(0, +patch.budgetHours || 0);
+  if (patch.budgetHours !== undefined) b.budgetHours = patch.budgetHours == null ? null : Math.max(0, +patch.budgetHours || 0);
   if (patch.service !== undefined) b.services = String(patch.service).split(',').map((x) => x.trim()).filter(Boolean);
   if (patch.start !== undefined) b.startDate = toDay(patch.start);
   if (patch.due !== undefined) b.dueDate = toDay(patch.due);
@@ -98,6 +100,7 @@ export const toApiProject = (m) => ({
     ? { milestones: m.ms.map((r) => ({ name: (r.name || '').trim(), dueDate: r.due, allocHours: Math.max(0, +r.hours || 0), team: r.team || [] })), budgetHours: +m.budget || 0 }
     : { budgetHours: +m.budget || 0 }),
   team: m.team || [],
+  primaryTeam: (m.primary || []).filter((x) => (m.team || []).includes(x) || x === m.pm),
   value: +m.value || 0, priority: m.prio || 'Medium', brief: m.brief || '', links: (m.links || []).map((l) => ({ type: l.type, url: l.url || '' })),
 });
 
@@ -109,6 +112,7 @@ export function toApiMilestonePatch(patch) {
   if (patch.status !== undefined) b.status = patch.status;
   if (patch.due !== undefined) b.dueDate = toDay(patch.due);
   if (patch.team !== undefined) b.team = patch.team;
+  if (patch.notes !== undefined) b.notes = patch.notes;
   return b;
 }
 

@@ -57,3 +57,10 @@
 .teamPerson { display: inline-flex; align-items: center; gap: 5px; font-weight: 500; }
 .teamEdit { border: 0; background: transparent; color: var(--primary); font: inherit; font-size: 12px; font-weight: 600; padding: 0; cursor: pointer; }
 .teamPick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 2px 0; }
+
+.links { display: flex; gap: 16px; flex-wrap: wrap; }
+.notePreview { align-self: flex-start; border: 0; background: oklch(0.975 0.01 85); border-radius: 6px; padding: 5px 8px; font: inherit; font-size: 12px; color: var(--ink-2); text-align: left; cursor: pointer; white-space: pre-wrap; overflow-wrap: anywhere; }
+.notesBox { display: flex; flex-direction: column; gap: 4px; }
+.notesInput { width: 100%; font: inherit; font-size: 12.5px; padding: 7px 9px; border: 1px solid var(--border-input); border-radius: 7px; resize: vertical; min-height: 64px; }
+.notesInput:focus { outline: none; border-color: oklch(0.6 0.13 265); }
+.notesRead { font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere; background: oklch(0.975 0.01 85); border-radius: 6px; padding: 7px 9px; }

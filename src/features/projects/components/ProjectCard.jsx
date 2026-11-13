@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { AvatarStack } from '@/components/ui';
+import { fd } from '@/lib/date';
 import { HealthPill, Meter, UsedOf } from './bits';
 import s from './shared.module.css';
 
@@ -22,8 +23,9 @@ function ProjectCard({ row, onOpen }) {
       />
       <div className={s.cardFoot}>
         <AvatarStack people={row.team} max={4} />
-        <span className={s.cardDue} style={{ color: I.dueColor }}>
-          {I.dueSub}
+        <span className={s.cardDue} title={`Onboarded ${I.p.start ? fd(I.p.start) : '—'} · due ${I.p.due ? fd(I.p.due) : '—'}`}>
+          <span className={s.cardStart}>{I.p.start ? `${fd(I.p.start)} → ` : ''}</span>
+          <span style={{ color: I.dueColor }}>{I.p.due ? fd(I.p.due) : ''} · {I.dueSub}</span>
         </span>
       </div>
     </div>

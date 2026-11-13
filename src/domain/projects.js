@@ -5,6 +5,32 @@ import { escapeHtml as esc, printHtml } from '@/lib/download';
 import { hh, inr } from '@/lib/format';
 import { serverNow } from '@/lib/clock';
 
+/** Start ("onboarded") / due date filter presets → [from, to) ms, or null for any. `T` = start of today. */
+export const PROJECT_START_PRESETS = [['', 'Onboarded: any time'], ['thisMonth', 'Onboarded this month'], ['lastMonth', 'Onboarded last month'],
+  ['last90', 'Onboarded in last 3 months'], ['thisYear', 'Onboarded this year'], ['custom', 'Onboarded between…']];
+export const PROJECT_DUE_PRESETS = [['', 'Due: any time'], ['overdue', 'Overdue'], ['thisWeek', 'Due this week'], ['thisMonth', 'Due this month'],
+  ['next30', 'Due in next 30 days'], ['next90', 'Due in next 3 months'], ['custom', 'Due between…']];
+export function projectDateRange(key, from, to, T) {
+  if (!key || key === 'overdue') return null;
+  const d = new Date(T);
+  const month = (y, m) => new Date(y, m, 1).getTime();
+  switch (key) {
+    case 'thisMonth': return [month(d.getFullYear(), d.getMonth()), month(d.getFullYear(), d.getMonth() + 1)];
+    case 'lastMonth': return [month(d.getFullYear(), d.getMonth() - 1), month(d.getFullYear(), d.getMonth())];
+    case 'last90': return [T - 89 * DAY, T + DAY];
+    case 'thisYear': return [new Date(d.getFullYear(), 0, 1).getTime(), new Date(d.getFullYear() + 1, 0, 1).getTime()];
+    case 'thisWeek': { const mon = T - ((d.getDay() + 6) % 7) * DAY; return [mon, mon + 7 * DAY]; }
+    case 'next30': return [T, T + 30 * DAY];
+    case 'next90': return [T, T + 90 * DAY];
+    case 'custom': {
+      const a = from ? new Date(`${from}T00:00:00`).getTime() : -Infinity;
+      const b = to ? new Date(`${to}T00:00:00`).getTime() + DAY : Infinity;
+      return [a, b];
+    }
+    default: return null;
+  }
+}
+
 /** Current milestone id of a project: first not-Done (by n), else the last; '' if none. */
 export function curMs(milestones, pid) {
   const a = milestones.filter((m) => m.p === pid).sort((x, y) => x.n - y.n);
@@ -131,10 +157,15 @@ export function buildProjectsModel(S, pj, now = serverNow()) {
 
   // Filters
   const q = f.q.trim().toLowerCase();
+  const startRg = projectDateRange(f.start, f.startFrom, f.startTo, T);
+  const dueRg = projectDateRange(f.due, f.dueFrom, f.dueTo, T);
+  const inRg = (t, rg) => !rg || (t != null && t >= rg[0] && t < rg[1]);
   const pBase = S.projects.filter((p) => (!q || `${p.name} ${p.client} ${p.id} ${p.team.map((id) => (MEM[id] || {}).name).join(' ')}`.toLowerCase().includes(q))
     && (!f.project || p.id === f.project)
     && (!f.member || p.team.includes(f.member))
-    && (!f.team || p.team.some((id) => (MEM[id] || {}).team === f.team)));
+    && (!f.team || p.team.some((id) => (MEM[id] || {}).team === f.team))
+    && inRg(p.start, startRg)
+    && (f.due === 'overdue' ? (p.due != null && p.due < T && !['Completed', 'Cancelled'].includes(p.status)) : inRg(p.due, dueRg)));
   const pF = f.status ? pBase.filter((p) => p.status === f.status) : pBase;
   const pSet = new Set(pF.map((p) => p.id));
   /** Aggregate key for a project's hours honouring the member/team filter. */

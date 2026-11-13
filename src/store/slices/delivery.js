@@ -85,9 +85,11 @@ export const createDeliverySlice = (set, get) => {
       });
       if (m.start !== toDay(p.start)) patch.start = m.start;
       if (m.due !== toDay(p.due)) patch.due = m.due;
-      const oldBudget = p.budgetHours != null ? +p.budgetHours : get().milestones.filter((x) => x.p === id).reduce((x, y) => x + (+y.alloc || 0), 0);
-      if (m.budget !== undefined && m.budget !== '' && Math.max(0, +m.budget || 0) !== oldBudget) patch.budgetHours = Math.max(0, +m.budget || 0);
-      const budgetDown = patch.budgetHours !== undefined && patch.budgetHours < oldBudget;
+      // Budget: '' = no budget (no limit) → null.
+      const oldBudget = p.budgetHours != null ? +p.budgetHours : null;
+      const newBudget = m.budget === undefined ? oldBudget : String(m.budget).trim() === '' ? null : Math.max(0, +m.budget || 0);
+      if (newBudget !== oldBudget) patch.budgetHours = newBudget;
+      const budgetDown = newBudget != null && (oldBudget == null || newBudget < oldBudget);
       // Milestones typed in the form: [{id?, name, due 'YYYY-MM-DD', hours}] — diff against the store.
       const rows = m.ms || null;
       if (rows) {
@@ -123,6 +125,13 @@ export const createDeliverySlice = (set, get) => {
         const have = (p.team || []).filter((x) => x !== p.pm && x !== pm);
         have.filter((x) => !want.has(x)).forEach((x) => teamOps.push(() => api.del(`/projects/${id}/members/${x}`)));
         [...want].filter((x) => !(p.team || []).includes(x)).forEach((x) => teamOps.push(() => api.post(`/projects/${id}/members`, { memberId: x })));
+      }
+      // Primary developers: flag changes (new members are added above first).
+      if (Array.isArray(m.primary)) {
+        const was = new Set(p.primary || []);
+        const now = new Set(m.primary.filter((x) => x === (patch.pm ?? p.pm) || (m.team || []).includes(x)));
+        [...now].filter((x) => !was.has(x)).forEach((x) => teamOps.push(() => api.put(`/projects/${id}/members/${x}`, { primary: true })));
+        [...was].filter((x) => !now.has(x) && (m.team || []).concat(patch.pm ?? p.pm).includes(x)).forEach((x) => teamOps.push(() => api.put(`/projects/${id}/members/${x}`, { primary: false })));
       }
       msOps.unshift(...teamOps);
       if (!Object.keys(patch).length && !msOps.length) { set({ modal: null }); return undefined; }
@@ -352,6 +361,19 @@ export const createDeliverySlice = (set, get) => {
       }
     },
 
+    /** Mark / unmark a project team member as a primary developer (PM). */
+    async setPrimary(pid, mid, on) {
+      const flip = (s, v) => ({ projects: mapById(s.projects, pid, (p) => ({ ...p, primary: v ? [...new Set((p.primary || []).concat(mid))] : (p.primary || []).filter((x) => x !== mid) })) });
+      set((s) => flip(s, on));
+      try {
+        await api.put(`/projects/${pid}/members/${mid}`, { primary: !!on });
+        get().flash(on ? `${memberName(get().members, mid) || 'Member'} marked as primary developer` : 'Primary developer removed');
+      } catch (e) {
+        set((s) => flip(s, !on));
+        get().flash(msg(e));
+      }
+    },
+
     /** Replace who works on a milestone (PM). People not on the project team join it. */
     async setMsTeam(mid, team) {
       const m = get().milestones.find((x) => x.id === mid);
@@ -371,7 +393,7 @@ export const createDeliverySlice = (set, get) => {
     updMs(id, patch) {
       set((s) => ({ milestones: patchById(s.milestones, id, patch) }));
       const send = () => api.patch(`/milestones/${id}`, toApiMilestonePatch(patch)).catch((e) => { get().flash(msg(e)); resyncDelivery(); });
-      if ('name' in patch || 'alloc' in patch) {
+      if ('name' in patch || 'alloc' in patch || 'notes' in patch) {
         const key = `ms:${id}:${Object.keys(patch).join(',')}`;
         debounce(key, () => {
           const m = get().milestones.find((x) => x.id === id);

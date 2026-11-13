@@ -40,7 +40,7 @@ export default function MilestonesSection({ project: sp, info: I, model }) {
   const onUpdate = useCallback(
     (id, patch) => {
       // Status is open to everyone; name / allocation are PM only (original behaviour).
-      if (('name' in patch || 'alloc' in patch || 'due' in patch) && !canEdit) return;
+      if (('name' in patch || 'alloc' in patch || 'due' in patch || 'notes' in patch) && !canEdit) return;
       if ('alloc' in patch) {
         const over = overBudget(patch.alloc, id);
         setOverMsg(over);
@@ -72,7 +72,7 @@ export default function MilestonesSection({ project: sp, info: I, model }) {
     <section>
       <SectionTitle
         title="Milestones"
-        sub={`${done} of ${I.ms.length} done · ${hh(I.ms.reduce((x, m) => x + (+m.alloc || 0), 0))} of ${hh(I.budget)} budget allocated`}
+        sub={`${done} of ${I.ms.length} done · ${hh(I.ms.reduce((x, m) => x + (+m.alloc || 0), 0))}${hasBudget ? ` of ${hh(+sp.budgetHours)} budget` : ' · no budget set'} allocated`}
         action={canEdit && !draft ? <Button size="sm" onClick={startAdd}>+ Add milestone</Button> : null}
       />
       {overMsg && (

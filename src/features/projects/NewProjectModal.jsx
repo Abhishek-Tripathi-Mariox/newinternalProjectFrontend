@@ -40,6 +40,7 @@ function initialForm(members) {
     due: ymd(T + 60 * DAY),
     budget: '',
     team: [],
+    primary: [],
     value: '',
     prio: 'Medium',
     brief: '',
@@ -56,7 +57,8 @@ function editForm(p, milestones) {
   return {
     ms,
     team: (p.team || []).filter((x) => x !== p.pm),
-    budget: String(p.budgetHours != null ? p.budgetHours : ms.reduce((x, r) => x + (+r.hours || 0), 0)),
+    primary: p.primary || [],
+    budget: p.budgetHours != null ? String(p.budgetHours) : '', // '' = no budget set (no limit)
     name: p.name || '',
     client: p.client || '',
     clientEmail: p.clientEmail || '',
@@ -144,10 +146,11 @@ export default function NewProjectModal({ editId, onClose }) {
   };
   // Taking someone off the project team also takes them off its milestones.
   const toggleMember = (id) => setForm((f) => (f.team.includes(id)
-    ? { ...f, team: f.team.filter((x) => x !== id), ms: (f.ms || []).map((r) => ({ ...r, team: (r.team || []).filter((x) => x !== id) })) }
+    ? { ...f, team: f.team.filter((x) => x !== id), primary: (f.primary || []).filter((x) => x !== id), ms: (f.ms || []).map((r) => ({ ...r, team: (r.team || []).filter((x) => x !== id) })) }
     : { ...f, team: f.team.concat(id) }));
   const otherMembers = members.filter((m) => m.id !== form.pm && (!m.inactive || form.team.includes(m.id)));
   const projectTeam = [form.pm].concat(form.team).filter(Boolean);
+  const togglePrimary = (id) => setForm((f) => ({ ...f, primary: (f.primary || []).includes(id) ? f.primary.filter((x) => x !== id) : (f.primary || []).concat(id) }));
   // Milestone pickers: the project team first, then every other active delivery person.
   const msChoices = projectTeam.concat(members.filter((m) => !m.inactive && !projectTeam.includes(m.id)).map((m) => m.id));
 
@@ -245,6 +248,16 @@ export default function NewProjectModal({ editId, onClose }) {
           ) : (
             <div className={s.note}>
               No other delivery people yet. Invite developers, designers or QA from <b>Users &amp; roles</b> — they show up here once they accept.
+            </div>
+          )}
+          {projectTeam.length > 0 && (
+            <div className={s.primaryRow}>
+              <span className={s.light}>Primary developer:</span>
+              {projectTeam.map((id) => (
+                <ToggleChip key={id} on={(form.primary || []).includes(id)} onClick={() => togglePrimary(id)} title="Main person responsible for building this project">
+                  {(form.primary || []).includes(id) ? '★ ' : '☆ '}{memberName(id)}
+                </ToggleChip>
+              ))}
             </div>
           )}
         </Field>

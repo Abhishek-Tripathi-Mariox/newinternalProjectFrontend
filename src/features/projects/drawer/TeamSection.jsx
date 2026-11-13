@@ -36,6 +36,7 @@ function MemberDetail({ detail }) {
 
 /** Team allocation editor: per-member allocated / taken / remaining, add & remove (PM only). */
 export default function TeamSection({ project: sp, info: I, model }) {
+  const setPrimary = useStore((st) => st.setPrimary);
   const exp = useStore((st) => st.pj.exp);
   const setPj = useStore((st) => st.setPj);
   const setAlloc = useStore((st) => st.setAlloc);
@@ -127,8 +128,11 @@ export default function TeamSection({ project: sp, info: I, model }) {
                   <button type="button" className={s.memberBtn} onClick={() => openMember(id)}>
                     <Avatar name={m.name} h={m.h} size={28} />
                     <span className={s.minw}>
-                      <span className={s.memberName}>{m.name}</span>
-                      <span className={s.memberRole}>{m.role}</span>
+                      <span className={s.memberName} title={m.name}>{m.name}</span>
+                      <span className={s.memberRole}>
+                        {(sp.primary || []).includes(id) && <span className={s.primaryTag}>★ Primary</span>}
+                        <span className={s.minwText}>{m.role}</span>
+                      </span>
                     </span>
                   </button>
                   {canEdit ? (
@@ -153,12 +157,23 @@ export default function TeamSection({ project: sp, info: I, model }) {
                     style={{ background: open ? 'oklch(0.95 0.03 265)' : '#fff' }}
                     onClick={() => setPj({ exp: open ? null : `pm:${id}` })}
                   >
-                    {open ? 'Hide ▴' : 'By date ▾'}
+                    {open ? 'Hide ▴' : 'Dates ▾'}
                   </button>
                   {canEdit ? (
-                    <button type="button" className={s.removeBtn} title="Remove from project" onClick={() => onRemove(id)}>
-                      ✕
-                    </button>
+                    <span className={s.rowBtns}>
+                      <button
+                        type="button"
+                        className={`${s.starBtn} ${(sp.primary || []).includes(id) ? s.starOn : ''}`}
+                        title={(sp.primary || []).includes(id) ? 'Primary developer — click to unmark' : 'Mark as primary developer'}
+                        aria-pressed={(sp.primary || []).includes(id)}
+                        onClick={() => setPrimary(sp.id, id, !(sp.primary || []).includes(id))}
+                      >
+                        {(sp.primary || []).includes(id) ? '★' : '☆'}
+                      </button>
+                      <button type="button" className={s.removeBtn} title="Remove from project" onClick={() => onRemove(id)}>
+                        ✕
+                      </button>
+                    </span>
                   ) : (
                     <span />
                   )}

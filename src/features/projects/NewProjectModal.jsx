@@ -23,7 +23,7 @@ function spreadDue(start, due, i) {
 }
 
 /** The five default milestones; `auto` rows follow the project dates until their date is edited. */
-const templateRows = (start, due) => MILESTONE_TEMPLATE.names.map((name, i) => ({ key: i, name, due: spreadDue(start, due, i), hours: '', auto: true, team: [] }));
+const templateRows = (start, due) => MILESTONE_TEMPLATE.names.map((name, i) => ({ key: i, name, due: spreadDue(start, due, i), hours: '', auto: true, team: [], teamHours: {} }));
 const respread = (rows, start, due) => rows.map((r, i) => (r.auto ? { ...r, due: i < MILESTONE_TEMPLATE.fractions.length ? spreadDue(start, due, i) : due } : r));
 let rowKey = 100;
 
@@ -53,7 +53,8 @@ function initialForm(members) {
 /** Existing project → form values (edit mode), with its milestones as editable rows. */
 function editForm(p, milestones) {
   const ms = milestones.filter((m) => m.p === p.id).sort((a, b) => a.n - b.n)
-    .map((m) => ({ key: m.id, id: m.id, name: m.name, due: m.due ? ymd(m.due) : '', hours: String(m.alloc || 0), auto: false, cr: !!m.cr, team: m.team || [] }));
+    .map((m) => ({ key: m.id, id: m.id, name: m.name, due: m.due ? ymd(m.due) : '', hours: String(m.alloc || 0), auto: false, cr: !!m.cr, team: m.team || [],
+      teamHours: Object.fromEntries(Object.entries(m.teamHours || {}).map(([k, v]) => [k, v ? String(v) : ''])) }));
   return {
     ms,
     team: (p.team || []).filter((x) => x !== p.pm),
@@ -97,7 +98,7 @@ export default function NewProjectModal({ editId, onClose }) {
     return next.ms ? { ...next, ms: respread(next.ms, next.start, next.due) } : next;
   });
   const setMs = (key, patch) => setForm((f) => ({ ...f, ms: f.ms.map((r) => (r.key === key ? { ...r, ...patch } : r)) }));
-  const addMs = () => setForm((f) => ({ ...f, ms: f.ms.concat({ key: rowKey++, name: '', due: f.due, hours: '', auto: false, team: [] }) }));
+  const addMs = () => setForm((f) => ({ ...f, ms: f.ms.concat({ key: rowKey++, name: '', due: f.due, hours: '', auto: false, team: [], teamHours: {} }) }));
   const [teamRow, setTeamRow] = useState(null); // milestone row whose team picker is open
   // Picking someone who is not on the project team adds them to it as well.
   const toggleMsMember = (key, id) => setForm((f) => {
@@ -109,6 +110,21 @@ export default function NewProjectModal({ editId, onClose }) {
       ms: f.ms.map((r) => (r.key === key ? { ...r, team: adding ? (r.team || []).concat(id) : r.team.filter((x) => x !== id) } : r)),
     };
   });
+  const setMemberHours = (key, id, v) => setForm((f) => ({ ...f, ms: f.ms.map((r) => (r.key === key ? { ...r, teamHours: { ...(r.teamHours || {}), [id]: v } } : r)) }));
+  /** Split a milestone's hours evenly across its team (whole hours, remainder to the first people). */
+  const splitEvenly = (key) => setForm((f) => ({
+    ...f,
+    ms: f.ms.map((r) => {
+      if (r.key !== key || !(r.team || []).length) return r;
+      const H = Math.max(0, Math.floor(+r.hours || 0));
+      const n = r.team.length;
+      const base = Math.floor(H / n);
+      let extra = H - base * n;
+      const teamHours = Object.fromEntries(r.team.map((id) => [id, String(base + (extra-- > 0 ? 1 : 0))]));
+      return { ...r, teamHours };
+    }),
+  }));
+  const teamSum = (r) => (r.team || []).reduce((x, id) => x + (+((r.teamHours || {})[id]) || 0), 0);
   const memberName = (id) => (members.find((m) => m.id === id) || {}).name || id;
   const removeMs = (key) => setForm((f) => ({ ...f, ms: f.ms.filter((r) => r.key !== key) }));
   const msTotal = (form.ms || []).reduce((x, r) => x + (+r.hours || 0), 0);
@@ -156,6 +172,13 @@ export default function NewProjectModal({ editId, onClose }) {
 
   const save = async () => {
     if (busy) return;
+    const teamOver = (form.ms || []).findIndex((r) => teamSum(r) > (+r.hours || 0) + 1e-9);
+    if (teamOver >= 0) {
+      const r0 = form.ms[teamOver];
+      setErr(`Milestone ${teamOver + 1} (${r0.name || 'untitled'}): team hours ${teamSum(r0)}h are more than its ${+r0.hours || 0}h.`);
+      setTeamRow(r0.key);
+      return;
+    }
     if (overBy > 0) {
       setErr(`Milestone hours (${msTotal}h) are more than the budget (${budgetN}h). Reduce them or raise the budget.`);
       return;
@@ -315,6 +338,7 @@ export default function NewProjectModal({ editId, onClose }) {
                 onClick={() => setTeamRow(teamRow === r.key ? null : r.key)}
               >
                 {(r.team || []).length ? `👥 ${r.team.length}` : '+ Team'}
+                {teamSum(r) > (+r.hours || 0) + 1e-9 ? ' ⚠' : ''}
               </button>
               {r.cr || loggedOn(r.id) ? (
                 <span className={s.removeBtn} title={r.cr ? 'Change-request milestone — can’t be removed' : 'Hours are logged on this milestone — it can’t be removed'}>🔒</span>
@@ -331,6 +355,36 @@ export default function NewProjectModal({ editId, onClose }) {
                     </ToggleChip>
                   )) : <span className={s.light}>No delivery people yet — invite them from Users &amp; roles.</span>}
                   {msChoices.some((id) => !projectTeam.includes(id)) && <span className={s.light}>“+” = joins the project team when picked.</span>}
+                  {(r.team || []).length > 0 && (
+                    <div className={s.msHours}>
+                      <div className={s.msHoursHead}>
+                        <span>Hours per person</span>
+                        <span className={teamSum(r) > (+r.hours || 0) + 1e-9 ? s.overText : s.light}>
+                          {teamSum(r)}h of {+r.hours || 0}h milestone
+                        </span>
+                        {(+r.hours || 0) > 0 && (
+                          <button type="button" className={s.addBtn} onClick={() => splitEvenly(r.key)}>Split evenly</button>
+                        )}
+                      </div>
+                      {r.team.map((id) => (
+                        <label key={id} className={s.msHourRow}>
+                          <span>{memberName(id)}</span>
+                          <Input
+                            type="number" min="0" step="1" placeholder="0"
+                            value={(r.teamHours || {})[id] ?? ''}
+                            onChange={(e) => setMemberHours(r.key, id, e.target.value)}
+                            aria-label={`${memberName(id)} hours on ${r.name || 'milestone'}`}
+                          />
+                          <span className={s.light}>h</span>
+                        </label>
+                      ))}
+                      {teamSum(r) > (+r.hours || 0) + 1e-9 && (
+                        <div className={s.overAlert} role="alert">
+                          Team hours ({teamSum(r)}h) are more than this milestone’s {+r.hours || 0}h. Reduce someone’s hours or raise the milestone hours.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

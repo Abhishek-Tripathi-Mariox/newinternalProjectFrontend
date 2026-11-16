@@ -42,6 +42,7 @@ export function fromApiMilestone(m) {
   return {
     id: m.id, p: m.projectId, n: m.n, name: m.name, alloc: m.allocHours || 0, due: dayMs(m.dueDate), status: m.status,
     team: m.team || [],
+    teamHours: m.teamHours || {},
     notes: m.notes || '',
     ...(m.crId ? { cr: m.crId } : {}),
     ...(a && a.status ? { appr: { st: a.status, asked: tms(a.askedAt), at: tms(a.at), note: a.note || '' } } : {}),
@@ -92,12 +93,15 @@ export function toApiProjectPatch(patch) {
   return b;
 }
 
+/** Milestone form row {team: ids, teamHours: {id: h}} → API team [{memberId, hours}]. */
+export const msTeamBody = (r) => (r.team || []).map((id) => ({ memberId: id, hours: Math.max(0, +((r.teamHours || {})[id]) || 0) }));
+
 /** New-project form → POST /projects body. */
 export const toApiProject = (m) => ({
   name: m.name || '', client: m.client || '', clientEmail: (m.clientEmail || '').trim(), services: String(m.service || '').split(',').map((x) => x.trim()).filter(Boolean),
   status: m.status, pmId: m.pm || undefined, startDate: m.start || '', dueDate: m.due || '',
   ...(Array.isArray(m.ms) && m.ms.length
-    ? { milestones: m.ms.map((r) => ({ name: (r.name || '').trim(), dueDate: r.due, allocHours: Math.max(0, +r.hours || 0), team: r.team || [] })), budgetHours: +m.budget || 0 }
+    ? { milestones: m.ms.map((r) => ({ name: (r.name || '').trim(), dueDate: r.due, allocHours: Math.max(0, +r.hours || 0), team: msTeamBody(r) })), budgetHours: +m.budget || 0 }
     : { budgetHours: +m.budget || 0 }),
   team: m.team || [],
   primaryTeam: (m.primary || []).filter((x) => (m.team || []).includes(x) || x === m.pm),

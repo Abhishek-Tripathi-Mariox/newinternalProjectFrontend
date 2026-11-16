@@ -42,7 +42,15 @@ export default function MilestonesSection({ project: sp, info: I, model }) {
       // Status is open to everyone; name / allocation are PM only (original behaviour).
       if (('name' in patch || 'alloc' in patch || 'due' in patch || 'notes' in patch) && !canEdit) return;
       if ('alloc' in patch) {
+        const ms = I.ms.find((x) => x.id === id);
+        const given = ms ? (ms.team || []).reduce((x, mid) => x + (+((ms.teamHours || {})[mid]) || 0), 0) : 0;
         const over = overBudget(patch.alloc, id);
+        if (!over && given > (+patch.alloc || 0) + 1e-9) {
+          // Warn while typing; the server refuses a final value below the team's hours.
+          setOverMsg(`${ms.name}: its team already has ${hh(given)} assigned — milestone hours can’t go below that. Reduce someone’s hours first.`);
+          updMs(id, patch);
+          return;
+        }
         setOverMsg(over);
         if (over) return;
       }

@@ -5,7 +5,7 @@ import { optimistic } from '@/api/optimistic';
 import { fromApiDoc, isPending, pendingFiles, syncDocs, uploadPending } from '@/api/files';
 import {
   exportLogs, fromApiBug, fromApiCr, fromApiLog, fromApiMilestone, fromApiProject, fromApiTask,
-  toApiBug, toApiCr, toApiLogs, toApiMilestonePatch, toApiProject, toApiProjectPatch, toApiTask, fromApiPfu, toApiPfu,
+  toApiBug, toApiCr, toApiLogs, toApiMilestonePatch, toApiProject, toApiProjectPatch, toApiTask, fromApiPfu, toApiPfu, msTeamBody,
 } from '@/api/delivery';
 import { mapById, patchById, memberName } from '../helpers';
 import { serverNow } from '@/lib/clock';
@@ -109,11 +109,11 @@ export const createDeliverySlice = (set, get) => {
             if (name !== old.name) b.name = name;
             if (hours !== (+old.alloc || 0)) b.allocHours = hours;
             if (r.due !== toDay(old.due)) b.dueDate = r.due;
-            const t = [...(r.team || [])].sort().join(',');
-            if (t !== [...(old.team || [])].sort().join(',')) b.team = r.team || [];
+            const sig = (ids, hrs) => [...(ids || [])].sort().map((x) => `${x}:${+((hrs || {})[x]) || 0}`).join(',');
+            if (sig(r.team, r.teamHours) !== sig(old.team, old.teamHours)) b.team = msTeamBody(r);
             if (Object.keys(b).length) msOps.push(() => api.patch(`/milestones/${old.id}`, b));
           } else if (!r.id) {
-            msOps.push(() => api.post(`/projects/${id}/milestones`, { name, dueDate: r.due, allocHours: hours, team: r.team || [] }));
+            msOps.push(() => api.post(`/projects/${id}/milestones`, { name, dueDate: r.due, allocHours: hours, team: msTeamBody(r) }));
           }
         });
       }
@@ -375,17 +375,18 @@ export const createDeliverySlice = (set, get) => {
     },
 
     /** Replace who works on a milestone (PM). People not on the project team join it. */
-    async setMsTeam(mid, team) {
+    async setMsTeam(mid, team, teamHours) {
       const m = get().milestones.find((x) => x.id === mid);
-      const prev = m ? m.team : [];
-      set((s) => ({ milestones: patchById(s.milestones, mid, { team }) }));
+      const prev = m ? { team: m.team, teamHours: m.teamHours } : { team: [], teamHours: {} };
+      const hrs = teamHours || (m && m.teamHours) || {};
+      set((s) => ({ milestones: patchById(s.milestones, mid, { team, teamHours: hrs }) }));
       try {
-        const dto = await api.patch(`/milestones/${mid}`, { team });
+        const dto = await api.patch(`/milestones/${mid}`, { team: msTeamBody({ team, teamHours: hrs }) });
         set((s) => ({ milestones: upsert(s.milestones, fromApiMilestone(dto)) }));
         const p = projectOf(dto.projectId);
         if (p && team.some((x) => !(p.team || []).includes(x))) mergeProject(await api.get(`/projects/${dto.projectId}`));
       } catch (e) {
-        set((s) => ({ milestones: patchById(s.milestones, mid, { team: prev }) }));
+        set((s) => ({ milestones: patchById(s.milestones, mid, prev) }));
         get().flash(msg(e));
       }
     },

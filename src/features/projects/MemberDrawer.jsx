@@ -65,10 +65,18 @@ export default function MemberDrawer() {
         segs: Object.keys(by).map((pid) => ({ pid, w: pctW(by[pid] / dayMax), bg: projectColor(PRJ[pid]), tip: `${(PRJ[pid] || {}).name || ''} · ${hh(by[pid])}` })),
       };
     });
+    // Milestones this person is on: hours given to them there vs hours they logged on it.
+    const myMs = (scoped.milestones || []).filter((m) => (m.team || []).includes(sm.id) && PRJ[m.p])
+      .map((m) => {
+        const given = +((m.teamHours || {})[sm.id]) || 0;
+        const logged = logs.filter((l) => l.ms === m.id && l.m === sm.id).reduce((x, l) => x + l.h, 0);
+        return { m, p: PRJ[m.p], given, logged };
+      })
+      .sort((a, b) => (a.m.status === 'Done') - (b.m.status === 'Done') || (a.m.due || 0) - (b.m.due || 0));
     const tasks = (scoped.tasks || []).filter((t) => t.a === sm.id && isTaskOpen(t)).sort(taskSort);
     const bugs = (scoped.bugs || []).filter((b) => b.a === sm.id && isBugOpen(b)).sort(bugSort);
     return {
-      sh, dl, dt, ap, al, tk, hist,
+      sh, dl, dt, ap, al, tk, hist, myMs,
       health: dayHealth(dt, sh, day, T),
       stats: [
         { label: 'Today', value: hh(H.today), sub: `of ${sh}h`, color: INK },
@@ -154,6 +162,28 @@ export default function MemberDrawer() {
           <div className={s.secHead}><h3 className={s.h3}>Assigned bugs</h3><span className={s.muted}>{d.bugSum}</span></div>
           {d.bugs.map((b) => <BugCard key={b.id} bug={b} compact />)}
           {d.bugs.length === 0 && <div className={s.none}>No open bugs assigned.</div>}
+        </section>
+
+        <section>
+          <div className={s.secHead}>
+            <h3 className={s.h3}>Milestones assigned</h3>
+            <span className={s.muted}>hours logged / given on each milestone</span>
+          </div>
+          {d.myMs.length === 0 && <div className={s.none}>Not assigned to any milestone yet.</div>}
+          {d.myMs.map(({ m, p, given, logged }) => {
+            const over = given > 0 && logged > given;
+            return (
+              <button key={m.id} type="button" className={s.msItem} onClick={() => openP(p.id, `ms:${m.id}`)}>
+                <span className={s.msItemMain}>
+                  <span className={s.msItemName}>{m.n}. {m.name}</span>
+                  <span className={s.muted}>{p.name} · {m.status}{m.due ? ` · due ${fday(m.due)}` : ''}</span>
+                </span>
+                <span className={s.msItemHours} style={{ color: over ? RED : INK }}>
+                  {hh(logged)} / {given ? hh(given) : '—'}
+                </span>
+              </button>
+            );
+          })}
         </section>
 
         <section>

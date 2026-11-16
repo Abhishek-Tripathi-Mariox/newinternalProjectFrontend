@@ -21,7 +21,28 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
   const [notesOpen, setNotesOpen] = useState(false);
   const notes = m.notes || '';
   const team = m.team || [];
-  const toggleTeam = (id) => onTeam && onTeam(m.id, team.includes(id) ? team.filter((x) => x !== id) : team.concat(id));
+  const saved = m.teamHours || {};
+  const loggedBy = useMemo(() => {
+    const out = {};
+    (logs || []).forEach((l) => { if (l.ms === m.id) out[l.m] = (out[l.m] || 0) + (+l.h || 0); });
+    return out;
+  }, [logs, m.id]);
+  const [hrs, setHrs] = useState(null); // hours being edited {id: string}, null when not editing
+  const cur = hrs || Object.fromEntries(team.map((id) => [id, saved[id] ? String(saved[id]) : '']));
+  const sum = team.reduce((x, id) => x + (+cur[id] || 0), 0);
+  const over = sum > (+m.alloc || 0) + 1e-9;
+  const asNums = (h) => Object.fromEntries(team.map((id) => [id, +h[id] || 0]));
+  const toggleTeam = (id) => {
+    if (!onTeam) return;
+    const next = team.includes(id) ? team.filter((x) => x !== id) : team.concat(id);
+    onTeam(m.id, next, Object.fromEntries(next.map((x) => [x, +cur[x] || 0])));
+  };
+  const saveHours = () => {
+    if (!hrs || over || !onTeam) return;
+    const changed = team.some((id) => (+hrs[id] || 0) !== (+saved[id] || 0));
+    if (changed) onTeam(m.id, team, asNums(hrs));
+    setHrs(null);
+  };
   const pct = m.alloc ? used / m.alloc : 0;
   const rem = m.alloc - used;
   const od = msOverdue(m, T);
@@ -102,14 +123,20 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
                 <span key={id} className={s.teamPerson} title={mem.role || ''}>
                   <Avatar name={mem.name} h={mem.h} size={20} />
                   {mem.name}
+                  <span className={s.muted} title="logged on this milestone / hours given">
+                    {' · '}{hh(loggedBy[id] || 0)}{saved[id] ? ` / ${hh(saved[id])}` : ''}
+                  </span>
                 </span>
               );
             })
           ) : (
             <span className={s.muted}>No one assigned</span>
           )}
+          {team.length > 0 && Object.keys(saved).length > 0 && (
+            <span className={s.muted}>({hh(team.reduce((x, id) => x + (+saved[id] || 0), 0))} of {hh(m.alloc || 0)})</span>
+          )}
           {canEdit && onTeam && (
-            <button type="button" className={s.teamEdit} onClick={() => setPicking((x) => !x)} aria-expanded={picking}>
+            <button type="button" className={s.teamEdit} onClick={() => { if (picking) saveHours(); setPicking((x) => !x); }} aria-expanded={picking}>
               {picking ? 'Done' : team.length ? 'Change' : '+ Assign'}
             </button>
           )}
@@ -128,6 +155,32 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
               );
             })}
             <span className={s.muted}>“+” = not on the project yet; picking them adds them to the project team.</span>
+            {team.length > 0 && (
+              <div className={s.hoursBox}>
+                <div className={s.hoursHead}>
+                  <span>Hours per person</span>
+                  <span className={over ? s.overText : s.muted}>{hh(sum)} of {hh(m.alloc || 0)} milestone</span>
+                </div>
+                {team.map((id) => (
+                  <label key={id} className={s.hourRow}>
+                    <span>{(memberById[id] || { name: id }).name}</span>
+                    <input
+                      className={s.allocInput}
+                      type="number" min="0" step="1" placeholder="0"
+                      value={cur[id] ?? ''}
+                      onChange={(e) => setHrs({ ...cur, [id]: e.target.value })}
+                      onBlur={saveHours}
+                      aria-label={`${(memberById[id] || { name: id }).name} hours`}
+                    />
+                  </label>
+                ))}
+                {over && (
+                  <div className={s.overBox} role="alert">
+                    Team hours ({hh(sum)}) are more than this milestone’s {hh(m.alloc || 0)}. Reduce someone’s hours or raise the milestone’s Alloc. h first.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

@@ -50,9 +50,24 @@ function StageColumn({ col, onOpen }) {
             </span>
           </div>
           <Meter left={<UsedOf used={r.used} of={`/ ${r.alloc}`} />} right={<span className={s.muted}>{r.pStatus}</span>} width={r.barW} color={r.barBg} />
+          {r.team.length > 0 && <MsTeam team={r.team} />}
         </button>
       ))}
       {!col.cards.length && <div className={s.stageEmpty}>No projects at this stage.</div>}
+    </div>
+  );
+}
+
+/** "Name 3h / 12h" chips: hours logged on the milestone / hours given to that person. */
+function MsTeam({ team }) {
+  return (
+    <div className={s.msTeam}>
+      {team.map((x) => (
+        <span key={x.id} className={s.msTeamItem} title={`${x.name}: ${hh(x.logged)} logged of ${hh(x.h)} given on this milestone`} style={x.h && x.logged > x.h ? { color: RED } : undefined}>
+          {x.name}
+          <span className={s.msTeamH}>{x.h ? `${hh(x.logged)} / ${hh(x.h)}` : hh(x.logged)}</span>
+        </span>
+      ))}
     </div>
   );
 }
@@ -105,13 +120,14 @@ const listColumns = [
       </div>
     ),
   },
+  { key: 'team', label: 'Team · logged / given', render: (r) => (r.team.length ? <MsTeam team={r.team} /> : <span className={s.muted}>—</span>) },
   { key: 'people', label: 'Worked by', render: (r) => <AvatarStack people={r.people} max={5} /> },
 ];
 
 /** Projects → Milestones: which stage each project is on, or every milestone with status chips. */
 export default function MilestonesTab() {
   const model = useProjectsModel();
-  const { milestones, members } = useScoped();
+  const { milestones, members, logs } = useScoped();
   const msView = useStore((st) => st.pj.msView) || 'stage';
   const msSt = useStore((st) => st.pj.msSt) || '';
   const setPj = useStore((st) => st.setPj);
@@ -120,6 +136,15 @@ export default function MilestonesTab() {
   const isList = msView === 'list';
 
   const avatar = useCallback((id) => avatarOf(members, id), [members]);
+  // Hours each person logged on each milestone, and the milestone team with given / logged hours.
+  const loggedBy = useMemo(() => {
+    const out = {};
+    (logs || []).forEach((l) => { if (l.ms) out[`${l.ms}:${l.m}`] = (out[`${l.ms}:${l.m}`] || 0) + (+l.h || 0); });
+    return out;
+  }, [logs]);
+  const teamOf = useCallback((m) => (m ? (m.team || []).map((id) => ({
+    id, name: (members.find((x) => x.id === id) || {}).name || id, h: +((m.teamHours || {})[id]) || 0, logged: loggedBy[`${m.id}:${id}`] || 0,
+  })) : []), [members, loggedBy]);
   const msAll = useMemo(() => pF.flatMap((p) => (msOf[p.id] || []).map((m) => ({ m, p }))), [pF, msOf]);
   const overBudget = useCallback((m) => g(`ms:${m.id}`).all > m.alloc && m.alloc > 0, [g]);
 
@@ -166,11 +191,12 @@ export default function MilestonesTab() {
             pStatus: I.p.status,
             dueSub: m ? (od ? `Overdue ${Math.round((T - m.due) / DAY)}d` : `Due ${fday(m.due)}`) : 'Done',
             dueColor: od ? RED : MUTED,
+            team: teamOf(m),
           };
         }),
       };
     });
-  }, [isList, pF, info, milestones, g, T]);
+  }, [isList, pF, info, milestones, g, T, teamOf]);
 
   const chips = useMemo(
     () => [
@@ -208,9 +234,10 @@ export default function MilestonesTab() {
           dueSub: od ? 'Overdue' : m.status === 'Done' ? 'Done' : `in ${Math.round((m.due - T) / DAY)}d`,
           dueColor: od ? RED : INK,
           people: (msPeople[m.id] || []).slice(0, 5).map(avatar),
+          team: teamOf(m),
         };
       });
-  }, [isList, msAll, msSt, T, overBudget, g, info, msPeople, avatar]);
+  }, [isList, msAll, msSt, T, overBudget, g, info, msPeople, avatar, teamOf]);
 
   return (
     <div className={s.stack}>

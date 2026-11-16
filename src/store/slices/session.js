@@ -120,19 +120,19 @@ export const createSessionSlice = (set, get) => ({
   },
 
   /** Sign out. Staff still checked in must submit the end-of-shift report first (original rule). */
+  /**
+   * Sign out of this device. Attendance is not touched: someone who is checked in stays checked in
+   * (their shift, break and running timer carry on) — they check out / end their shift separately.
+   */
   async logout() {
     const S = get();
     const me = S.me;
+    let note;
     if (me && me.role.id !== 'r-super' && me.role.id !== 'r-client') {
-      const pid = pidOf(me);
-      const a = liveBase(S.live).att[pid];
-      if (a && !a.out) {
-        get().flash('Submit your end-of-shift report to log out');
-        get().openEndShift(pid);
-        return;
-      }
+      const a = liveBase(S.live).att[pidOf(me)];
+      if (a && !a.out) note = 'Logged out · your shift is still running — use End shift when you finish for the day';
     }
-    await get().endSession();
+    await get().endSession(note);
   },
 
   /** Clear the session locally and on the server; wipe all loaded data from memory. */

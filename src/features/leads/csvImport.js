@@ -45,7 +45,8 @@ export function mapHeaders(header) {
     const n = norm(h);
     return Object.keys(HEADERS).find((f) => HEADERS[f].includes(n)) || null;
   });
-  const missing = ['company', 'contact'].filter((f) => !map.includes(f));
+  // Company or Contact is enough (the other copies it).
+  const missing = map.includes('company') || map.includes('contact') ? [] : ['company or contact'];
   return { map, missing };
 }
 

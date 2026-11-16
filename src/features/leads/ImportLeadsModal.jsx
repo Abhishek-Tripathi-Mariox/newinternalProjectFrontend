@@ -35,7 +35,7 @@ export default function ImportLeadsModal({ onClose }) {
     const all = parseCsv(await f.text());
     if (all.length < 2) { setErr('The file has no rows under the header line.'); return; }
     const { map, missing } = mapHeaders(all[0]);
-    if (missing.length) { setErr(`Missing column${missing.length > 1 ? 's' : ''}: ${missing.map((m) => m[0].toUpperCase() + m.slice(1)).join(', ')}. Download the sample to see the format.`); return; }
+    if (missing.length) { setErr('The file needs a Company or a Contact column. Download the sample to see the format.'); return; }
     const rows = toRows(all.slice(1), map);
     if (rows.length > MAX_ROWS) { setErr(`The file has ${rows.length} rows — import at most ${MAX_ROWS} at a time.`); return; }
     setFile({ name: f.name, rows, ignored: all[0].filter((_, i) => !map[i]).filter(Boolean) });
@@ -62,6 +62,7 @@ export default function ImportLeadsModal({ onClose }) {
     ['Row', 'Company', 'Problem'],
     ...result.errors.map((e) => [e.row, e.company || '', e.error]),
     ...result.skipped.map((x) => [x.row, x.company || '', `Skipped: already a lead (${x.duplicateOf})`]),
+    ...(result.warnings || []).map((w) => [w.row, w.company || '', `Imported with a note: ${w.warning}`]),
   ], 'leads-import-problems.csv');
 
   const preview = useMemo(() => (file ? file.rows.slice(0, 5) : []), [file]);
@@ -86,8 +87,9 @@ export default function ImportLeadsModal({ onClose }) {
           <div className={s.stepBody}>
             <div className={s.stepTitle}>Use the sample format</div>
             <div className={s.muted}>
-              Columns: <b>Company</b>*, <b>Contact</b>*, Email, Phone, <b>Services</b>* (separate several with <code>;</code>), Source, Owner (sales person’s name
-              or email), Status (pipeline stage, default New), Value, Notes. Blank Source / Owner use the defaults.
+              Columns: <b>Company</b> and / or <b>Contact</b> (one is required), Email, Phone, Services (separate several with <code>;</code>), Source,
+              Owner (sales person’s name or email), Status (pipeline stage, default New), Value, Notes. Blank or unknown Source / Owner / Status use
+              the defaults — the original value is kept in the lead’s notes.
             </div>
             <Button size="sm" onClick={sample}>⬇ Download sample CSV</Button>
           </div>
@@ -132,13 +134,17 @@ export default function ImportLeadsModal({ onClose }) {
             <div className={s.resultLine}>
               <span className={s.ok}>✓ {result.created} imported</span>
               {result.skipped.length > 0 && <span className={s.skip}>{result.skipped.length} skipped (already leads)</span>}
-              {result.errors.length > 0 && <span className={s.bad}>{result.errors.length} with problems</span>}
-              {(result.errors.length > 0 || result.skipped.length > 0) && (
+              {(result.warnings || []).length > 0 && <span className={s.skip}>{result.warnings.length} imported with notes</span>}
+              {result.errors.length > 0 && <span className={s.bad}>{result.errors.length} not imported</span>}
+              {(result.errors.length > 0 || result.skipped.length > 0 || (result.warnings || []).length > 0) && (
                 <Button size="sm" variant="ghost" onClick={downloadProblems}>Download list</Button>
               )}
             </div>
             {result.errors.slice(0, 50).map((e) => (
               <div key={`e${e.row}`} className={s.problem}><b>Row {e.row}</b>{e.company ? ` · ${e.company}` : ''} — {e.error}</div>
+            ))}
+            {(result.warnings || []).slice(0, 50).map((w) => (
+              <div key={`w${w.row}${w.warning}`} className={s.problemSkip}><b>Row {w.row}</b>{w.company ? ` · ${w.company}` : ''} — imported; {w.warning}</div>
             ))}
             {result.skipped.slice(0, 20).map((x) => (
               <div key={`s${x.row}`} className={s.problemSkip}><b>Row {x.row}</b> · {x.company} — already a lead ({x.duplicateOf})</div>

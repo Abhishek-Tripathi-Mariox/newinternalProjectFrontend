@@ -1,5 +1,6 @@
 import { DataTable } from '@/components/ui';
 import PersonCell from '../shared/PersonCell';
+import { hh } from '@/lib/format';
 import s from './AttendanceSummaryTable.module.css';
 
 const COLUMNS = [
@@ -10,6 +11,7 @@ const COLUMNS = [
   { key: 'avgIn', label: 'Avg login', render: (r) => r.avgIn },
   { key: 'avgOut', label: 'Avg logout', render: (r) => r.avgOut },
   { key: 'brk', label: 'Break time', align: 'right', render: (r) => r.brk },
+  { key: 'intH', label: 'Internal work', align: 'right', render: (r) => (r.intH ? <span title="Internal (non-project) hours from end-of-shift reports">{hh(r.intH)}</span> : '—') },
   { key: 'avg', label: 'Avg per day', align: 'right', render: (r) => r.avg },
   { key: 'total', label: 'Total worked', align: 'right', render: (r) => <b className={s.b7}>{r.total}</b> },
 ];

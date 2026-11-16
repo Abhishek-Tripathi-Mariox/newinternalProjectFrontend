@@ -24,3 +24,5 @@
 .evDot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; }
 .evLabel { font-size: 13px; font-weight: 500; }
 .evSub { font-size: 11.5px; color: var(--muted); }
+
+.internal { flex-basis: 100%; width: 100%; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--divider); }

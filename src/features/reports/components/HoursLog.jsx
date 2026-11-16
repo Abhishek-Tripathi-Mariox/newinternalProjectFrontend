@@ -1,6 +1,7 @@
 import { Avatar } from '@/components/ui';
 import KpiRow from '@/features/attendance/shared/KpiRow';
 import { eventDot, eventFg } from '@/features/attendance/shared/attendanceUtils';
+import InternalWorkList from '@/features/attendance/shared/InternalWorkList';
 import s from './HoursLog.module.css';
 
 /** One person's events for a day. */
@@ -20,6 +21,7 @@ function PersonDay({ r }) {
             {e.sub && <span className={s.evSub}>{e.sub}</span>}
           </div>
         ))}
+        {r.internal && r.internal.length > 0 && <div className={s.internal}><InternalWorkList items={r.internal} compact /></div>}
       </div>
       <div className={s.totals}>
         <div><div className={s.tLabel}>Break</div><div className={s.tBreak}>{r.brk}</div></div>

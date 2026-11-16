@@ -5,6 +5,8 @@ import SegmentLegend from '../shared/SegmentLegend';
 import { SEG } from '../shared/attendanceUtils';
 import { ATT_HOURS } from '../useAttendanceModel';
 import DayBar from './DayBar';
+import InternalWorkList from '../shared/InternalWorkList';
+import { hh } from '@/lib/format';
 import s from './AttendanceDayTable.module.css';
 
 /** Expanded row content: event chips + end-of-shift report. */
@@ -21,12 +23,13 @@ function RowDetails({ r }) {
             </span>
           ))}
         </div>
-        {r.rep.length > 0 && (
+        {(r.rep.length > 0 || r.internal.length > 0) && (
           <div className={s.report}>
             <div className={s.reportTitle}>End-of-shift report</div>
             {r.rep.map((q) => (
               <div key={q.k + q.v} className={s.reportLine}><span className={s.reportKey}>{q.k}</span><span className={s.reportVal}>{q.v}</span></div>
             ))}
+            {r.internal.length > 0 && <div className={s.internal}><InternalWorkList items={r.internal} /></div>}
           </div>
         )}
       </td>
@@ -68,6 +71,7 @@ export default function AttendanceDayTable({ firstCol, rows, empty, onToggle }) 
                 </td>
                 <td className={s.nowrap}>
                   {r.outL}{r.rep.length > 0 && <> <span className={s.repTag}>Report</span></>}
+                  {r.intH > 0 && <> <span className={s.intTag} title="Internal work logged this day">Internal {hh(r.intH)}</span></>}
                 </td>
                 <td className={s.worked} style={{ color: r.workedColor }}>{r.worked}</td>
                 <td className={s.barCell}><DayBar segs={r.segs} /></td>

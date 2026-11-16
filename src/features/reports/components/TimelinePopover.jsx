@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Avatar, IconButton } from '@/components/ui';
 import { eventDot } from '@/features/attendance/shared/attendanceUtils';
+import InternalWorkList from '@/features/attendance/shared/InternalWorkList';
 import s from './TimelinePopover.module.css';
 
 /** Fixed-position card with the full day for a clicked timeline segment. */
@@ -52,6 +53,7 @@ export default function TimelinePopover({ data, x, y, onClose }) {
             </div>
           ))}
         </div>
+        {data.internal.length > 0 && <div className={s.internal}><InternalWorkList items={data.internal} compact /></div>}
       </div>
     </>,
     document.body,

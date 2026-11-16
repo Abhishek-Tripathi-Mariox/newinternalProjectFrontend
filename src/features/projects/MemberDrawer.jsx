@@ -12,7 +12,11 @@ import BugCard from './components/BugCard';
 import { bugSort, isBugOpen, isBugOverdue, isTaskOpen, isTaskOverdue, taskSort } from './workItems';
 import { ACTIVE_STATUSES } from './lib/view';
 import { memberProjectDetail } from './lib/logs';
+import { internalOn } from '@/features/attendance/shared/internalWork';
 import s from './MemberDrawer.module.css';
+
+/** Colour for internal (non-project) work from end-of-shift reports. */
+const INTERNAL = 'oklch(0.62 0.13 300)';
 
 const STATUS_ORDER = Object.keys(PROJECT_STATUS);
 
@@ -41,18 +45,25 @@ export default function MemberDrawer() {
     const H = g(`m:${sm.id}`);
     const wdW = workdaysSoFar(wk[0], wk[1]);
     const dl = logs.filter((l) => l.m === sm.id && l.d === day);
-    const dt = dl.reduce((x, l) => x + l.h, 0);
+    const il = internalOn(scoped.reports, sm.id, day);
+    const ih = il.reduce((x, e) => x + e.h, 0);
+    const dt = dl.reduce((x, l) => x + l.h, 0) + ih;
     const ap = scoped.projects.filter((p) => p.team.includes(sm.id)).sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
     const act = ap.filter((p) => ACTIVE_STATUSES.includes(p.status));
     const al = act.reduce((x, p) => x + (+p.alloc[sm.id] || 0), 0);
     const tk = act.reduce((x, p) => x + g(`pm:${p.id}:${sm.id}`).all, 0);
     const days = Array.from({ length: 14 }, (_, i) => sod(T - i * DAY + NOON));
     const yd = sod(T - DAY + NOON);
-    const dayMax = Math.max(10, ...days.map((x) => g(`d:${sm.id}:${x}`).all));
+    const intBy = {};
+    days.forEach((x) => { intBy[x] = internalOn(scoped.reports, sm.id, x).reduce((a, e) => a + e.h, 0); });
+    const dayMax = Math.max(10, ...days.map((x) => g(`d:${sm.id}:${x}`).all + intBy[x]));
+    let anyInt = false;
     const used = new Set();
     const hist = days.map((x) => {
       const L = logs.filter((l) => l.m === sm.id && l.d === x);
-      const t = L.reduce((a, l) => a + l.h, 0);
+      const ih2 = intBy[x];
+      if (ih2) anyInt = true;
+      const t = L.reduce((a, l) => a + l.h, 0) + ih2;
       const sun = new Date(x).getDay() === 0;
       const by = {};
       L.forEach((l) => { by[l.p] = (by[l.p] || 0) + l.h; used.add(l.p); });
@@ -62,7 +73,8 @@ export default function MemberDrawer() {
         sun,
         total: t ? hh(t) : sun ? 'Off' : '—',
         totalColor: !t && !sun && x < T ? RED : t > sh ? 'oklch(0.5 0.15 300)' : INK,
-        segs: Object.keys(by).map((pid) => ({ pid, w: pctW(by[pid] / dayMax), bg: projectColor(PRJ[pid]), tip: `${(PRJ[pid] || {}).name || ''} · ${hh(by[pid])}` })),
+        segs: Object.keys(by).map((pid) => ({ pid, w: pctW(by[pid] / dayMax), bg: projectColor(PRJ[pid]), tip: `${(PRJ[pid] || {}).name || ''} · ${hh(by[pid])}` }))
+          .concat(ih2 ? [{ pid: '__internal', w: pctW(ih2 / dayMax), bg: INTERNAL, tip: `Internal work · ${hh(ih2)}` }] : []),
       };
     });
     // Milestones this person is on: hours given to them there vs hours they logged on it.
@@ -76,7 +88,7 @@ export default function MemberDrawer() {
     const tasks = (scoped.tasks || []).filter((t) => t.a === sm.id && isTaskOpen(t)).sort(taskSort);
     const bugs = (scoped.bugs || []).filter((b) => b.a === sm.id && isBugOpen(b)).sort(bugSort);
     return {
-      sh, dl, dt, ap, al, tk, hist, myMs,
+      sh, dl, il, dt, ap, al, tk, hist, myMs,
       health: dayHealth(dt, sh, day, T),
       stats: [
         { label: 'Today', value: hh(H.today), sub: `of ${sh}h`, color: INK },
@@ -85,7 +97,8 @@ export default function MemberDrawer() {
         { label: 'This month', value: hh(H.month), sub: '', color: INK },
         { label: 'All time', value: hh(H.all), sub: '', color: INK },
       ],
-      legend: Array.from(used).map((pid) => ({ pid, name: (PRJ[pid] || {}).name, color: projectColor(PRJ[pid]) })),
+      legend: Array.from(used).map((pid) => ({ pid, name: (PRJ[pid] || {}).name, color: projectColor(PRJ[pid]) }))
+        .concat(anyInt ? [{ pid: '__internal', name: 'Internal work', color: INTERNAL }] : []),
       tasks,
       taskSum: `${tasks.length} open · ${tasks.filter((t) => isTaskOverdue(t, T)).length} overdue`,
       bugs,
@@ -145,7 +158,17 @@ export default function MemberDrawer() {
               </div>
             );
           })}
-          {d.dl.length === 0 && <div className={s.dayEmpty}>No hours logged on this day.</div>}
+          {d.il.map((e) => (
+            <div key={e.id} className={s.dayRow}>
+              <div className={s.plain} style={{ cursor: 'default' }}>
+                <div className={s.projName}><span className={s.sq} style={{ background: INTERNAL }} />Internal · {e.cat}</div>
+                <div className={s.projSub} style={{ whiteSpace: 'pre-wrap' }}>{e.note || '—'}</div>
+              </div>
+              <ProgressBar width={pctW(e.h / d.sh)} color={INTERNAL} />
+              <span className={s.hours}>{hh(e.h)}</span>
+            </div>
+          ))}
+          {d.dl.length === 0 && d.il.length === 0 && <div className={s.dayEmpty}>No hours logged on this day.</div>}
           <div className={s.dayFoot}>
             <span><span style={{ fontWeight: 700 }}>{hh(d.dt)}</span> <span style={{ color: MUTED }}>of {shiftLabel}</span></span>
             <span className={s.health} style={{ background: `oklch(0.95 0.04 ${d.health[1]})`, color: `oklch(0.45 0.14 ${d.health[1]})` }}>{d.health[0]}</span>

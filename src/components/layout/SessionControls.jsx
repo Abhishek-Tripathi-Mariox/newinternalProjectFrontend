@@ -36,9 +36,11 @@ export default function SessionControls({ pid, now: tick }) {
     return { day: sumDay(list, T, now), events: dayEvents(list, aa, now) };
   }, [attLog, pid, T, now, aa]);
 
-  const status = !aa || aa.out ? 'Not checked in' : aa.brk ? `On break · ${fmtDur(now - aa.brk)}` : `Working · ${fmtDur(day.work)} today`;
+  // Checked out today → the day is over: no second check-in until tomorrow (server enforces it too).
+  const ended = !!aa && !!aa.out;
+  const status = ended ? 'Shift ended' : !aa ? 'Not checked in' : aa.brk ? `On break · ${fmtDur(now - aa.brk)}` : `Working · ${fmtDur(day.work)} today`;
   const dot = !aa || aa.out ? 'oklch(0.7 0.01 265)' : aa.brk ? 'oklch(0.72 0.14 70)' : 'oklch(0.62 0.16 150)';
-  const needIn = !aa || !!aa.out;
+  const needIn = !aa;
   const canBreak = !!aa && !aa.out;
 
   return (
@@ -61,6 +63,9 @@ export default function SessionControls({ pid, now: tick }) {
         <button type="button" className={cx(s.sBtn, s.checkIn)} disabled={!!busy} aria-busy={busy === 'in' || undefined} onClick={act('in', () => checkIn(pid))}>
           {busy === 'in' ? 'Checking in…' : 'Check in'}
         </button>
+      )}
+      {ended && (
+        <span className={s.dayDone} role="status">✓ Today&apos;s work is done · see you tomorrow</span>
       )}
       {canBreak && (
         <button type="button" className={cx(s.sBtn, s.brk, aa.brk && s.brkOn)} disabled={!!busy} aria-busy={busy === 'brk' || undefined} onClick={act('brk', () => myBreak())}>

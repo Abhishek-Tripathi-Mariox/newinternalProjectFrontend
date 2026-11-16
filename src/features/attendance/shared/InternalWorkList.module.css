@@ -1,0 +1,14 @@
+.wrap { display: flex; flex-direction: column; gap: 6px; }
+.wrapCompact { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.title { font-size: 12px; font-weight: 600; color: var(--label); text-transform: uppercase; letter-spacing: 0.04em; }
+.total { font-size: 12px; font-weight: 600; color: oklch(0.45 0.12 300); }
+.line { display: flex; align-items: baseline; gap: 8px; font-size: 13px; line-height: 1.45; min-width: 0; }
+.wrapCompact .line { font-size: 12px; }
+.date { color: var(--muted); white-space: nowrap; min-width: 48px; }
+.cat {
+  flex-shrink: 0; white-space: nowrap; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px;
+  background: oklch(0.95 0.03 300); color: oklch(0.42 0.12 300);
+}
+.h { flex-shrink: 0; font-weight: 600; white-space: nowrap; }
+.note { white-space: pre-wrap; text-wrap: pretty; color: var(--ink-2, inherit); min-width: 0; overflow-wrap: anywhere; }

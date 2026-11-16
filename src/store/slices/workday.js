@@ -100,7 +100,8 @@ export const createWorkdaySlice = (set, get) => {
       const pid = pidOf(sessionUser(S));
       if (!pid) return;
       const a = liveBase(S.live).att[pid];
-      if (!a || a.out) { await get().checkIn(pid); return; }
+      if (a && a.out) { get().flash("Today's shift has ended — you can check in again tomorrow."); return; }
+      if (!a) { await get().checkIn(pid); return; }
       if (!a.brk) { get().openModal('brk', { pid }); return; }
       // "Welcome back · 12m break · 3m over" comes from the server.
       await run(pid, () => workdayApi.endBreak(pid, isSelf(pid)));
@@ -208,7 +209,7 @@ export const createWorkdaySlice = (set, get) => {
       set({ modal: null });
       // Today's time logs were replaced and a report was saved: reload logs, attendance and reports.
       await get().resync(['delivery', 'workday']).catch(() => {});
-      get().flash(res && res.message ? res.message : 'Report submitted · shift ended');
+      get().flash("Report submitted · today's work is done — see you tomorrow");
       return undefined;
     },
   };

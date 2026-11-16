@@ -8,6 +8,7 @@ import {
   resolveRange, workdays, withTeams, isLate, isExpectedDay, LATE_MS, EVL, SEG, HOUR_MS,
   RANGE_TITLES, statusColors, workedColor, reportLines, indexById, dayShort, dayLong,
 } from './shared/attendanceUtils';
+import { internalOn, internalEntries } from './shared/internalWork';
 
 export const ATT_DEFAULTS = { range: 'today', date: '', team: '', q: '', person: '', exp: '' };
 export const ATT_TEAMS = ['Sales'].concat(TEAMS);
@@ -29,6 +30,7 @@ function dayRow(p, d, label, sub, ctx) {
     ? (d === T && now < d + LATE_MS ? ['Not in yet', 265] : ['Absent', 25])
     : s.onBreak ? ['On break', 70] : s.online ? ['Online', 150] : ['Logged out', 265];
   const rep = reportLines(reports, PRJ, p.id, d);
+  const internal = internalOn(reports, p.id, d);
   const tone = statusColors(st[1]);
   return {
     key, person: p, label, sub,
@@ -50,6 +52,8 @@ function dayRow(p, d, label, sub, ctx) {
     })),
     open: exp === key,
     rep,
+    internal,
+    intH: internal.reduce((x, e) => x + e.h, 0),
     events: list.map((e, i) => ({ key: i, time: clock(e.t), text: EVL[e.k][0], dot: `oklch(0.62 0.14 ${EVL[e.k][1]})` })),
   };
 }
@@ -95,6 +99,7 @@ export function buildAttendanceModel(S, AF, now) {
         if (s.first) ins.push(s.first - d);
         if (s.last) outs.push(s.last - d);
       });
+      const intH = internalEntries(S.reports, { who: p.id, from: rng[0], to: rng[1] }).reduce((x, e) => x + e.h, 0);
       const avgT = (a) => (a.length ? clock(T + a.reduce((x, y) => x + y, 0) / a.length) : '—');
       const expected = aDays.filter((d) => isExpectedDay(d, T, now)).length;
       const absent = Math.max(0, expected - pres);
@@ -102,7 +107,7 @@ export function buildAttendanceModel(S, AF, now) {
         id: p.id, person: p, name: p.name, role: p.role,
         present: `${pres} / ${expected}`, absent, absColor: expected - pres > 0 ? 'oklch(0.5 0.17 25)' : 'oklch(0.52 0.012 265)',
         late, lateColor: late ? 'oklch(0.5 0.17 25)' : 'oklch(0.52 0.012 265)',
-        avgIn: avgT(ins), avgOut: avgT(outs), total: fmtDur(wk), totalH: wk, brk: fmtDur(br), avg: pres ? fmtDur(wk / pres) : '—',
+        avgIn: avgT(ins), avgOut: avgT(outs), total: fmtDur(wk), totalH: wk, brk: fmtDur(br), avg: pres ? fmtDur(wk / pres) : '—', intH,
       };
     }).sort((a, b) => b.totalH - a.totalH);
   }

@@ -7,9 +7,11 @@ import { dLabel } from '@/lib/date';
 import { hh } from '@/lib/format';
 import { MiniAvatar } from '../components/TaskCard';
 import { memberAvatar } from '../workItems';
+import { useScoped } from '@/hooks/useScoped';
+import { internalEntries } from '@/features/attendance/shared/internalWork';
 import s from './WorkTabs.module.css';
 
-const VIEWS = [['entries', 'Entries'], ['matrix', 'Member × project']];
+const VIEWS = [['entries', 'Entries'], ['matrix', 'Member × project'], ['internal', 'Internal work']];
 
 /**
  * Timesheets tab: filtered entries (paginated, deletable) or a member × project
@@ -22,7 +24,15 @@ export default function TimesheetsTab() {
   const exportTimesheets = useStore((st) => st.exportTimesheets);
   const flash = useStore((st) => st.flash);
   const { LF, inR, pF, memF, g, hk, MEM, PRJ, MSS, periodLabel } = useProjectsModel();
-  const view = pj.tsView === 'matrix' ? 'matrix' : 'entries';
+  const view = ['matrix', 'internal'].includes(pj.tsView) ? pj.tsView : 'entries';
+  const reports = useScoped().reports;
+
+  // Internal (non-project) work from end-of-shift reports, for the members in the filter.
+  const intRows = useMemo(() => {
+    const mem = new Set(memF.map((m) => m.id));
+    return internalEntries(reports).filter((e) => mem.has(e.who) && inR(e.d));
+  }, [reports, memF, inR]);
+  const intTotal = useMemo(() => intRows.reduce((x, e) => x + e.h, 0), [intRows]);
 
   const ents = useMemo(
     () => LF.filter((l) => inR(l.d)).sort((a, b) => b.d - a.d || ((MEM[a.m] || {}).name || '').localeCompare((MEM[b.m] || {}).name || '')),
@@ -88,6 +98,14 @@ export default function TimesheetsTab() {
     },
   ];
 
+  const intColumns = [
+    columns[0],
+    { ...columns[1], render: (e) => columns[1].render({ m: e.who }) },
+    { key: 'cat', label: 'Type', render: (e) => <span className={s.nowrap} style={{ fontWeight: 500 }}>{e.cat}</span> },
+    { key: 'note', label: 'Work done', render: (e) => <span style={{ color: 'oklch(0.4 0.012 265)', whiteSpace: 'pre-wrap' }}>{e.note || '—'}</span> },
+    { key: 'h', label: 'Hours', align: 'right', render: (e) => <span className={s.b600}>{hh(e.h)}</span> },
+  ];
+
   // Matrix rows (members) are paginated; the Total row still sums every member in the filter.
   const mxPager = usePagination(mx.rows);
   return (
@@ -95,12 +113,23 @@ export default function TimesheetsTab() {
       <div className={s.bar}>
         <SegmentedControl options={VIEWS} value={view} onChange={(v) => setPj({ tsView: v })} />
         <div className={s.group}>
-          <div className={s.summary}><span className={s.strong}>{hh(total)}</span> · {ents.length} entries · {periodLabel.toLowerCase()}</div>
-          <Button variant="secondary" onClick={exportCsv}>Export timesheet CSV</Button>
+          {view === 'internal' ? (
+            <div className={s.summary}><span className={s.strong}>{hh(intTotal)}</span> internal · {intRows.length} entries · {periodLabel.toLowerCase()}</div>
+          ) : (
+            <>
+              <div className={s.summary}><span className={s.strong}>{hh(total)}</span> · {ents.length} entries · {periodLabel.toLowerCase()}</div>
+              <Button variant="secondary" onClick={exportCsv}>Export timesheet CSV</Button>
+            </>
+          )}
         </div>
       </div>
 
-      {view === 'entries' ? (
+      {view === 'internal' ? (
+        <div>
+          <DataTable itemLabel="entries" columns={intColumns} rows={intRows} rowKey={(e) => e.id} minWidth={820} empty="No internal work in end-of-shift reports for these filters." />
+          <div className={s.hint}>Internal work comes from each person&apos;s end-of-shift report (not counted in project hours).</div>
+        </div>
+      ) : view === 'entries' ? (
         <div>
           <DataTable itemLabel="entries" columns={columns} rows={ents} rowKey={(l) => l.id} minWidth={960} empty="No hours logged for these filters." />
         </div>

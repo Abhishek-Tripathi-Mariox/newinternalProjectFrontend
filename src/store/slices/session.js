@@ -78,6 +78,7 @@ export const createSessionSlice = (set, get) => ({
     const pid = res.user.role.id === 'r-super' ? null : pidOf(res.user);
     const a = pid && liveBase(get().live).att[pid];
     if (pid && res.user.role.id !== 'r-client' && !a && get().checkIn) await get().checkIn(pid);
+    else if (pid && a && a.out) get().flash("Today's shift has ended · see you tomorrow");
     return undefined;
   },
 

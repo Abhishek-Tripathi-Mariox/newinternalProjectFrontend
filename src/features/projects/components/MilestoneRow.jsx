@@ -135,9 +135,12 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
           {team.length > 0 && Object.keys(saved).length > 0 && (
             <span className={s.muted}>({hh(team.reduce((x, id) => x + (+saved[id] || 0), 0))} of {hh(m.alloc || 0)})</span>
           )}
+          {canEdit && onTeam && !picking && team.length > 0 && team.every((id) => !saved[id]) && (
+            <button type="button" className={s.setHours} onClick={() => setPicking(true)}>Set hours per person</button>
+          )}
           {canEdit && onTeam && (
             <button type="button" className={s.teamEdit} onClick={() => { if (picking) saveHours(); setPicking((x) => !x); }} aria-expanded={picking}>
-              {picking ? 'Done' : team.length ? 'Change' : '+ Assign'}
+              {picking ? 'Done' : team.length ? 'Team & hours' : '+ Assign'}
             </button>
           )}
         </div>

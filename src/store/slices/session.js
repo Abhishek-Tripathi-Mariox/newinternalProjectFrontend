@@ -73,10 +73,11 @@ export const createSessionSlice = (set, get) => ({
       return e.message;
     }
     get().flash(`Welcome, ${res.user.name.split(' ')[0]}`);
-    // Logging in starts the workday for staff (original behaviour).
+    // Logging in starts the workday for staff — only on the first sign-in of the day. Someone who
+    // already ended their shift today (or is still checked in) is not checked in again.
     const pid = res.user.role.id === 'r-super' ? null : pidOf(res.user);
     const a = pid && liveBase(get().live).att[pid];
-    if (pid && res.user.role.id !== 'r-client' && (!a || a.out) && get().checkIn) await get().checkIn(pid);
+    if (pid && res.user.role.id !== 'r-client' && !a && get().checkIn) await get().checkIn(pid);
     return undefined;
   },
 

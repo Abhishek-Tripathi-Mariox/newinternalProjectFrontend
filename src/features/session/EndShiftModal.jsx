@@ -149,7 +149,7 @@ export default function EndShiftModal({ onClose, ...initial }) {
     if (busy) return;
     setBusy(true);
     const e = await submitEndShift({ ...form, err: '' });
-    // On success the session ends (this modal unmounts with it).
+    // On success the store closes this modal.
     if (e) { setErr(e); setBusy(false); }
   };
 

@@ -178,7 +178,7 @@ export const createWorkdaySlice = (set, get) => {
     /**
      * Submit the end-of-shift report (form from openEndShift). The server checks logged hours
      * against time worked, replaces today's logs with the report rows and checks the person out;
-     * the signed-in person is then signed out. Resolves to an error message or undefined.
+     * the person stays signed in. Resolves to an error message or undefined.
      */
     async submitEndShift(m) {
       const pid = m.who;
@@ -204,8 +204,11 @@ export const createWorkdaySlice = (set, get) => {
       } catch (e) {
         return e.message;
       }
+      // The person stays signed in (logging out is separate from ending the shift).
       set({ modal: null });
-      await get().endSession(res && res.message ? res.message : 'Report submitted · shift ended');
+      // Today's time logs were replaced and a report was saved: reload logs, attendance and reports.
+      await get().resync(['delivery', 'workday']).catch(() => {});
+      get().flash(res && res.message ? res.message : 'Report submitted · shift ended');
       return undefined;
     },
   };

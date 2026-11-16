@@ -97,12 +97,30 @@ export function scopeState(S) {
   return any ? out : S;
 }
 
+/**
+ * Whose attendance / shift reports the current view covers: null = everyone (Super Admin's own
+ * view); for anyone else signed in as themself, their own pid plus the people who report to them
+ * ("Reports to", from the session user); [] when they have no team (or while previewing).
+ */
+export function teamPids(state) {
+  if (!state.viewAs) return null;
+  const me = state.me;
+  if (!me || state.viewAs !== me.id || !(me.reportees || []).length) return [];
+  return [pidOf(me)].concat(me.reportees.map((r) => r.pid));
+}
+
+/** Attendance / Reports pages: the Super Admin, or a manager with people reporting to them. */
+export const hasTeamView = (state) => {
+  const t = teamPids(state);
+  return t === null || t.length > 0;
+};
+
 /** May the current view open this route? (Original noAccess logic.) `tab` = pj.tab for /projects. */
 export function canAccessPath(state, path, tab = state.pj && state.pj.tab) {
   const key = Object.keys(MODULE_OF_PATH).find((p) => path === p || path.startsWith(`${p}/`));
   if (!key) return true;
   const mod = key === '/projects' ? MODULE_OF_TAB[tab] || 'projects' : MODULE_OF_PATH[key];
-  if (mod === null) return !state.viewAs;
+  if (mod === null) return key === '/live' ? !state.viewAs : hasTeamView(state);
   // Managing pipeline stages / sources / services needs edit rights on leads.
   if (key === '/lead-setup') return can(state, 'leads', 'e');
   return can(state, mod, 'v');

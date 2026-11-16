@@ -3,7 +3,7 @@ import { liveBase } from '@/domain/live';
 import { pidOf, sessionUser } from '@/domain/permissions';
 import { curMs } from '@/domain/projects';
 import { getOwners } from '@/store/owners';
-import { fetchEvents, fetchLive, fetchReports, fromApiLog, isCeo, workdayApi } from '@/api/workday';
+import { fetchEvents, fetchLive, fetchReports, fromApiLog, hasTeam, isCeo, workdayApi } from '@/api/workday';
 import { serverNow } from '@/lib/clock';
 
 /** Same JSON → same reference (keeps polling from re-rendering when nothing changed). */
@@ -57,7 +57,7 @@ export const createWorkdaySlice = (set, get) => {
         const [live, evs, reps] = await Promise.all([
           fetchLive(me),
           fetchEvents(me, T, T),
-          isCeo(me) ? fetchReports(me, T, T).catch(() => null) : Promise.resolve(null),
+          isCeo(me) || hasTeam(me) ? fetchReports(me, T, T).catch(() => null) : Promise.resolve(null),
         ]);
         if (get().me !== me) return; // signed out meanwhile
         const S = get();

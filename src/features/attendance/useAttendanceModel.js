@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useStore } from '@/store';
 import { useScoped } from '@/hooks/useScoped';
-import { sumDay, groupAttendance, people as peopleOf } from '@/domain/attendance';
+import { sumDay, groupAttendance, workdayPeople as peopleOf } from '@/domain/attendance';
 import { sod, clock, fmtDur, ymd } from '@/lib/date';
 import { TEAMS } from '@/config/constants';
 import {

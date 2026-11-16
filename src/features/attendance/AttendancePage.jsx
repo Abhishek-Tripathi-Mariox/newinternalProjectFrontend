@@ -20,6 +20,8 @@ export default function AttendancePage() {
   const { AF, model: m } = useAttendanceModel(now);
   const setAttF = useStore((st) => st.setAttF);
   const flash = useStore((st) => st.flash);
+  // CSV export is a Super Admin (server) report; managers see their team on screen only.
+  const ceoView = useStore((st) => !st.viewAs);
 
   const onRange = (patch) => {
     if ('range' in patch) setAttF({ range: patch.range, person: AF.person, exp: '' });
@@ -53,7 +55,7 @@ export default function AttendancePage() {
           <RangeFilter range={AF.range} date={AF.date || ymd(today())} onChange={onRange} />
           <Select compact value={AF.team} options={TEAM_OPTIONS} onChange={(e) => setAttF({ team: e.target.value })} />
           <SearchInput className={s.search} value={AF.q} onChange={(e) => setAttF({ q: e.target.value })} placeholder="Search person" />
-          <Button variant="secondary" onClick={exportCsv} disabled={exporting} aria-busy={exporting || undefined}>{exporting ? 'Exporting…' : 'Export CSV'}</Button>
+          {ceoView && <Button variant="secondary" onClick={exportCsv} disabled={exporting} aria-busy={exporting || undefined}>{exporting ? 'Exporting…' : 'Export CSV'}</Button>}
         </div>
       </div>
 

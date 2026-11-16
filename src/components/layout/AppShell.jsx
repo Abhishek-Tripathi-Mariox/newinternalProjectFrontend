@@ -23,7 +23,7 @@ import s from './AppShell.module.css';
 export default function AppShell() {
   const { pathname } = useLocation();
   const perm = useStore(
-    useShallow((x) => ({ viewAs: x.viewAs, users: x.users, roles: x.roles, tab: x.pj?.tab })),
+    useShallow((x) => ({ viewAs: x.viewAs, users: x.users, roles: x.roles, tab: x.pj?.tab, me: x.me })),
   );
   const navigate = useNavigate();
   const allowed = canAccessPath(perm, pathname, perm.tab);

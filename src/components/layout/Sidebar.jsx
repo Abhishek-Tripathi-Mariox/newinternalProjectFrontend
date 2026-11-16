@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/store';
-import { authUser, can, scopeState, firstProjectsTab, viewUser } from '@/domain/permissions';
+import { authUser, can, hasTeamView, scopeState, firstProjectsTab, viewUser } from '@/domain/permissions';
 import { people } from '@/domain/attendance';
 import { useNow } from '@/hooks/useNow';
 import { DAY, sod } from '@/lib/date';
@@ -44,7 +44,7 @@ export default function Sidebar() {
   const st = useStore(
     useShallow((x) => ({
       leads: x.leads, fus: x.fus, pfus: x.pfus, members: x.members, projects: x.projects, logs: x.logs, tasks: x.tasks, bugs: x.bugs,
-      milestones: x.milestones, crs: x.crs, users: x.users, roles: x.roles, viewAs: x.viewAs, live: x.live, pjTab: x.pj?.tab, myId: x.auth?.uid, auth: x.auth,
+      milestones: x.milestones, crs: x.crs, users: x.users, roles: x.roles, viewAs: x.viewAs, me: x.me, live: x.live, pjTab: x.pj?.tab, myId: x.auth?.uid, auth: x.auth,
     })),
   );
   const setPj = useStore((x) => x.setPj);
@@ -64,7 +64,7 @@ export default function Sidebar() {
     const running = (S.projects || []).filter((p) => p.status === 'Running');
     return {
       showLive: !st.viewAs,
-      showAtt: !st.viewAs,
+      showAtt: hasTeamView(st),
       showDash: c('dash'),
       showLeads: c('leads'),
       showFu: c('fu'),

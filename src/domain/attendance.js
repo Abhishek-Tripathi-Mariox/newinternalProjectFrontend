@@ -1,6 +1,7 @@
 import { sod } from '@/lib/date';
 import { getActiveOwners } from '@/store/owners';
 import { serverNow } from '@/lib/clock';
+import { pidOf, teamPids } from '@/domain/permissions';
 
 /**
  * Everyone tracked by Live / Attendance / Reports: delivery members followed
@@ -10,6 +11,25 @@ import { serverNow } from '@/lib/clock';
 export function people(state) {
   return (state.members || []).filter((x) => !x.inactive).map((x) => ({ id: x.id, name: x.name, role: `${x.role} · ${x.team}`, h: x.h, sales: false, shift: x.shift || 8 }))
     .concat(getActiveOwners().map((o) => ({ id: o.id, name: o.name, role: 'Sales', h: o.h, sales: true, shift: 8 })));
+}
+
+/**
+ * People shown on Attendance / Reports: everyone for the Super Admin; for a manager, themself plus
+ * the people who report to them (anyone missing from the loaded lists is added from the session).
+ */
+export function workdayPeople(state) {
+  const all = people(state);
+  const t = teamPids(state);
+  if (t === null) return all;
+  const ids = new Set(t);
+  const out = all.filter((p) => ids.has(p.id));
+  const me = state.me || {};
+  const extra = [{ pid: pidOf(me), name: me.name, role: (me.role && me.role.name) || '', team: me.team }].concat(me.reportees || []);
+  extra.forEach((r) => {
+    if (!r.pid || out.some((p) => p.id === r.pid)) return;
+    out.push({ id: r.pid, name: r.name || r.pid, role: [r.role, r.team].filter(Boolean).join(' · '), h: 265, sales: false, shift: 8 });
+  });
+  return out;
 }
 
 /** Group attendance events in [from, to) by `who|day`, each list sorted by time. */

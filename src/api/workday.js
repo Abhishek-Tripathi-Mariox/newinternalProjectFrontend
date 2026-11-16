@@ -15,6 +15,8 @@ import { today, addDays } from '@/lib/date';
 const HISTORY_DAYS = 45;
 
 export const isCeo = (me) => !!me && (me.isSuper || (me.role && me.role.id === 'r-super'));
+/** A manager: people report to them, so the server returns their team's attendance / reports too. */
+export const hasTeam = (me) => !!me && !isCeo(me) && (me.reportees || []).length > 0;
 const isStaff = (me) => !!me && !!me.pid && !(me.role && me.role.id === 'r-client');
 
 const num = (x) => (x == null ? 0 : Number(x) || 0);
@@ -78,12 +80,12 @@ export async function fetchLive(me) {
 
 /** Attendance events in [from, to] (local day ms). CEO: everyone; staff: their own (person is forced). */
 export async function fetchEvents(me, from, to) {
-  const q = { ...range(from, to), ...(isCeo(me) ? {} : { person: me.pid }) };
+  const q = { ...range(from, to), ...(isCeo(me) || hasTeam(me) ? {} : { person: me.pid }) };
   return (await getAll('/attendance/events', q)).map(fromApiEvent);
 }
 
 export async function fetchReports(me, from, to) {
-  const q = { ...range(from, to), ...(isCeo(me) ? {} : { person: me.pid }) };
+  const q = { ...range(from, to), ...(isCeo(me) || hasTeam(me) ? {} : { person: me.pid }) };
   return (await getAll('/shift-reports', q)).map(fromApiReport);
 }
 

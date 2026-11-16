@@ -24,6 +24,7 @@ export default function ReportsPage() {
   const { RF, timeline: tl, log, popover } = useReportsModel(now, pop);
   const setRepF = useStore((st) => st.setRepF);
   const flash = useStore((st) => st.flash);
+  const ceoView = useStore((st) => !st.viewAs);
   const [exporting, setExporting] = useState(false);
   const exportCsv = async () => {
     if (exporting) return;
@@ -82,7 +83,7 @@ export default function ReportsPage() {
               onChange={(e) => setRepF({ person: e.target.value })}
             />
             <RangeFilter range={RF.range} date={RF.date || ymd(today())} onChange={setRepF} />
-            <Button variant="secondary" onClick={exportCsv} disabled={exporting} aria-busy={exporting || undefined}>{exporting ? 'Exporting…' : 'Export CSV'}</Button>
+            {ceoView && <Button variant="secondary" onClick={exportCsv} disabled={exporting} aria-busy={exporting || undefined}>{exporting ? 'Exporting…' : 'Export CSV'}</Button>}
           </div>
         )}
       </div>

@@ -98,22 +98,50 @@ export function scopeState(S) {
 }
 
 /**
- * Whose attendance / shift reports the current view covers: null = everyone (Super Admin's own
- * view); for anyone else signed in as themself, their own pid plus the people who report to them
- * ("Reports to", from the session user); [] when they have no team (or while previewing).
+ * Active people below `userId` in the "Reports to" chain (direct and indirect) from the users list:
+ * [{pid, name, role, team}]. Clients and Super Admins are left out.
+ */
+export function reporteesFromUsers(state, userId) {
+  const users = (state.users || []).filter((u) => u.status === 'Active' && u.role !== 'r-client' && u.role !== 'r-super');
+  const out = [];
+  const seen = new Set([userId]);
+  let level = [userId];
+  for (let depth = 0; depth < 10 && level.length; depth++) {
+    const next = users.filter((u) => level.includes(u.reports) && !seen.has(u.id));
+    next.forEach((u) => { seen.add(u.id); out.push({ pid: pidOf(u), name: u.name, role: u.title || '', team: '' }); });
+    level = next.map((u) => u.id);
+  }
+  return out;
+}
+
+/** People who report to the viewed user: from the users list, plus the session's own list when viewing yourself. */
+export function viewReportees(state) {
+  const u = viewUser(state);
+  if (!u) return [];
+  const list = reporteesFromUsers(state, u.id);
+  const me = state.me;
+  if (me && me.id === u.id) (me.reportees || []).forEach((r) => { if (!list.some((x) => x.pid === r.pid)) list.push(r); });
+  return list;
+}
+
+/**
+ * Whose attendance / shift reports the current view covers, by the role's "Attendance & reports"
+ * (att) permission: null = everyone (Super Admin's own view, or scope All); Team = their own pid
+ * plus the people who report to them; Own = their own pid; no View = [].
  */
 export function teamPids(state) {
   if (!state.viewAs) return null;
-  const me = state.me;
-  if (!me || state.viewAs !== me.id || !(me.reportees || []).length) return [];
-  return [pidOf(me)].concat(me.reportees.map((r) => r.pid));
+  const u = viewUser(state);
+  if (!u || !can(state, 'att', 'v')) return [];
+  const r = (state.roles || []).find((x) => x.id === u.role);
+  const scope = (r && r.perms && r.perms.att && r.perms.att.scope) || 'all';
+  if (scope === 'all') return null;
+  const self = [pidOf(u)];
+  return scope === 'team' ? self.concat(viewReportees(state).map((x) => x.pid)) : self;
 }
 
-/** Attendance / Reports pages: the Super Admin, or a manager with people reporting to them. */
-export const hasTeamView = (state) => {
-  const t = teamPids(state);
-  return t === null || t.length > 0;
-};
+/** Attendance / Reports pages: the Super Admin, or a role with "Attendance & reports" View. */
+export const hasTeamView = (state) => !state.viewAs || can(state, 'att', 'v');
 
 /** May the current view open this route? (Original noAccess logic.) `tab` = pj.tab for /projects. */
 export function canAccessPath(state, path, tab = state.pj && state.pj.tab) {

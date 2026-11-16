@@ -15,8 +15,14 @@ import { today, addDays } from '@/lib/date';
 const HISTORY_DAYS = 45;
 
 export const isCeo = (me) => !!me && (me.isSuper || (me.role && me.role.id === 'r-super'));
-/** A manager: people report to them, so the server returns their team's attendance / reports too. */
-export const hasTeam = (me) => !!me && !isCeo(me) && (me.reportees || []).length > 0;
+/**
+ * "Attendance & reports" with scope All or Team: the server returns more than their own data
+ * (it applies the scope), so requests don't pin ?person to themself.
+ */
+export const hasTeam = (me) => {
+  const p = me && !isCeo(me) && me.role && me.role.perms && me.role.perms.att;
+  return !!(p && p.v && p.scope !== 'own');
+};
 const isStaff = (me) => !!me && !!me.pid && !(me.role && me.role.id === 'r-client');
 
 const num = (x) => (x == null ? 0 : Number(x) || 0);

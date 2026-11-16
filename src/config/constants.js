@@ -52,7 +52,11 @@ export const MODULES = [
   ['ts', 'Timesheets', 'Log and view hours'],
   ['team', 'Team & hours', 'Hours and allocation per person'],
   ['users', 'Users & roles', 'Users, roles and permissions'],
+  ['att', 'Attendance & reports', 'Check-ins, breaks, end-of-shift reports, internal work · Team = people who report to them'],
 ];
+
+/** Modules with View only (no Create / Edit / Delete). */
+export const VIEW_ONLY_MODULES = ['att'];
 
 export const REMINDERS = [
   [0, 'No reminder'], [5, '5 min before'], [10, '10 min before'], [30, '30 min before'], [60, '1 hour before'], [1440, '1 day before'],

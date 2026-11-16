@@ -1,5 +1,5 @@
 import { useStore } from '@/store';
-import { MODULES } from '@/config/constants';
+import { MODULES, VIEW_ONLY_MODULES } from '@/config/constants';
 import { DATA_SCOPES, PERM_ACTIONS, permOf } from '../users.utils';
 import s from './PermissionMatrix.module.css';
 
@@ -86,12 +86,12 @@ export default function PermissionMatrix({ role }) {
                 </td>
                 {PERM_ACTIONS.map(([a, actLabel]) => (
                   <td key={a} className={s.actTd}>
-                    <PermCheck
+                    {a !== 'v' && VIEW_ONLY_MODULES.includes(k) ? <span className={s.hint} title="View only">—</span> : <PermCheck
                       on={!!p[a]}
                       locked={locked}
                       tip={locked ? 'System role cannot be changed' : `${actLabel} ${label}`}
                       onToggle={() => toggle(k, a)}
-                    />
+                    />}
                   </td>
                 ))}
                 <td className={s.scopeTd}>

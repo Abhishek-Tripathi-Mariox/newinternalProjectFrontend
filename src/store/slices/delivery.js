@@ -79,7 +79,8 @@ export const createDeliverySlice = (set, get) => {
       const next = { ...m, value: +m.value || 0 };
       const patch = {};
       if (m.clientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.clientEmail.trim())) return 'Enter a valid client email.';
-      ['name', 'client', 'clientEmail', 'service', 'status', 'pm', 'value', 'prio', 'brief'].forEach((k) => {
+      if (m.status === 'On hold' && !(m.statusReason ?? p.statusReason)) return 'Pick why the project is on hold.';
+      ['name', 'client', 'clientEmail', 'service', 'status', 'pm', 'value', 'prio', 'brief', 'statusReason', 'statusNote'].forEach((k) => {
         const v = typeof next[k] === 'string' ? next[k].trim() : next[k];
         if (v !== (p[k] ?? '')) patch[k] = v;
       });
@@ -249,6 +250,25 @@ export const createDeliverySlice = (set, get) => {
     /* ───────────── Milestones ───────────── */
 
     /** Milestone edit `{name, alloc, status, due}` — status at once, typing debounced. */
+    /**
+     * Why on hold / delayed: {reason, note} and optionally a new status (e.g. 'On hold').
+     * A reason is required to put a project on hold. Returns an error message or undefined.
+     */
+    async setStatusNote(pid, { status, reason, note }) {
+      const p = projectOf(pid);
+      if (!p) return 'Project not found.';
+      if (status === 'On hold' && !reason) return 'Pick why the project is on hold.';
+      try {
+        const body = { statusReason: reason || '', statusNote: (note || '').trim(), ...(status ? { status } : {}) };
+        mergeProject(await api.patch(`/projects/${pid}`, body));
+      } catch (e) {
+        return msg(e);
+      }
+      set({ modal: null });
+      get().flash(status && status !== p.status ? `${p.name} → ${status}${reason ? ` · ${reason}` : ''}` : reason || note ? 'Status note saved' : 'Status note cleared');
+      return undefined;
+    },
+
     /* ───────────── Project third parties & credentials ───────────── */
 
     /** Load a project's third parties → integ[pid] = {items, canManage, canReveal, credentialsEnabled}. */

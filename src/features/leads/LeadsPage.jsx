@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useStore } from '@/store';
+import { can } from '@/domain/permissions';
 import { Button, FilterChips, KanbanBoard, SegmentedControl } from '@/components/ui';
 import { useLeadStatusNames } from '@/store/masters';
 import { range } from '@/lib/date';
@@ -22,6 +23,8 @@ export default function LeadsPage() {
   const stageNames = useLeadStatusNames();
   const { leads, ins, now } = useLeadInsights();
   const lf = useStore((st) => st.lf);
+  const openModal = useStore((st) => st.openModal);
+  const canImport = useStore((st) => can(st, 'leads', 'c'));
   const sort = useStore((st) => st.sort);
   const leadView = useStore((st) => st.leadView);
   const selIds = useStore((st) => st.selIds);
@@ -102,6 +105,7 @@ export default function LeadsPage() {
           <div className={s.summary}>{shown.length} leads · {money(sumValue(shown))} total value</div>
         </div>
         <div className={s.actions}>
+          {canImport && <Button onClick={() => openModal('leadImport')}>Import CSV</Button>}
           <Button onClick={exportShown} disabled={exporting} aria-busy={exporting}>Export CSV</Button>
           <SegmentedControl options={VIEW_OPTIONS} value={leadView} onChange={(v) => setLeadView(val(v))} />
         </div>

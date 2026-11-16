@@ -63,6 +63,9 @@ export const FU_DEFAULTS = { Meeting: [45, 10, true], Call: [15, 10, false], Tas
 
 export const BREAK_TYPES = [['Lunch', 45], ['Tea / coffee', 15], ['Personal', 15], ['Meeting outside', 30]];
 
+/** Why a project is on hold / delayed. */
+export const STATUS_REASONS = ['Client end', 'Third party', 'Internal / team', 'Payment pending', 'Scope change', 'Other'];
+
 export const MILESTONE_TEMPLATE = {
   fractions: [0.15, 0.3, 0.3, 0.15, 0.1],
   names: ['Feature List', 'UI/UX Milestone 1', 'Frontend Milestone 2', 'Backend Milestone 3', 'QA, Third Party, Go Live - Milestone 4'],

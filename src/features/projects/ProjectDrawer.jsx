@@ -77,8 +77,11 @@ export default function ProjectDrawer() {
       aria-label="Project status"
       options={STATUS_KEYS}
       onChange={(e) => {
-        updProj(sp.id, { status: e.target.value });
-        flash(`${sp.name} → ${e.target.value}`);
+        const v = e.target.value;
+        // Putting a project on hold asks why (client end, third party…).
+        if (v === 'On hold' && sp.status !== 'On hold') { openModal('pstatus', { pid: sp.id, status: 'On hold' }); return; }
+        updProj(sp.id, { status: v });
+        flash(`${sp.name} → ${v}`);
       }}
     />
   );
@@ -124,6 +127,24 @@ export default function ProjectDrawer() {
           </div>
           <ProgressBar width={pctW(I.pct)} color={barColor(I.pct)} />
         </div>
+
+        {(sp.statusReason || sp.statusNote) ? (
+          <div className={`${s.statusNote} ${sp.status === 'On hold' ? s.statusNoteHold : ''}`}>
+            <div className={s.statusNoteHead}>
+              <span className={s.statusNoteTitle}>{sp.status === 'On hold' ? '⏸ Why on hold' : '⚠ Why delayed'}</span>
+              {sp.statusReason && <span className={s.statusReason}>{sp.statusReason}</span>}
+              {sp.statusNoteAt && <span className={s.statusNoteAt}>since {fd(sp.statusNoteAt)}</span>}
+              {isPM(sp) && (
+                <button type="button" className={s.statusNoteEdit} onClick={() => openModal('pstatus', { pid: sp.id })}>Edit</button>
+              )}
+            </div>
+            {sp.statusNote && <div className={s.statusNoteText}>{sp.statusNote}</div>}
+          </div>
+        ) : isPM(sp) && (
+          <button type="button" className={s.addStatusNote} onClick={() => openModal('pstatus', { pid: sp.id })}>
+            + Add a hold / delay note (client end, third party…)
+          </button>
+        )}
 
         {I.why.length > 0 && (
           <div className={s.why}>

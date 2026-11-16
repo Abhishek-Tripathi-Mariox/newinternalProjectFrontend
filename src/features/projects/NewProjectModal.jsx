@@ -3,7 +3,7 @@ import { Button, DocumentsPanel, ErrorText, Field, Input, LinksEditor, Modal, Se
 import { useStore } from '@/store';
 import { useScoped } from '@/hooks/useScoped';
 import { DAY, today, ymd } from '@/lib/date';
-import { MILESTONE_TEMPLATE, PRIORITY_NAMES } from '@/config/constants';
+import { MILESTONE_TEMPLATE, PRIORITY_NAMES, STATUS_REASONS } from '@/config/constants';
 import { getServices, useMasters, useServices } from '@/store/masters';
 import AddChip from '@/features/leads/components/AddChip';
 import ToggleChip from './components/ToggleChip';
@@ -35,6 +35,8 @@ function initialForm(members) {
     clientEmail: '',
     service: '',
     status: 'Planning',
+    statusReason: '',
+    statusNote: '',
     pm: members.some((m) => m.id === DEFAULT_PM) ? DEFAULT_PM : (members[0] || {}).id || '',
     start: ymd(T),
     due: ymd(T + 60 * DAY),
@@ -65,6 +67,8 @@ function editForm(p, milestones) {
     clientEmail: p.clientEmail || '',
     service: p.service || '',
     status: p.status,
+    statusReason: p.statusReason || '',
+    statusNote: p.statusNote || '',
     pm: p.pm || '',
     start: p.start ? ymd(p.start) : '',
     due: p.due ? ymd(p.due) : '',
@@ -179,6 +183,10 @@ export default function NewProjectModal({ editId, onClose }) {
       setTeamRow(r0.key);
       return;
     }
+    if (form.status === 'On hold' && !form.statusReason) {
+      setErr('Pick why the project is on hold (client end, third party…).');
+      return;
+    }
     if (overBy > 0) {
       setErr(`Milestone hours (${msTotal}h) are more than the budget (${budgetN}h). Reduce them or raise the budget.`);
       return;
@@ -239,6 +247,22 @@ export default function NewProjectModal({ editId, onClose }) {
         <Field label="Status">
           <Select value={form.status} onChange={set('status')} options={STATUS_KEYS} />
         </Field>
+        {(form.status === 'On hold' || form.statusReason || form.statusNote) && (
+          <div className={`${s.full} ${s.holdBox}`}>
+            <div className={s.holdTitle}>
+              {form.status === 'On hold' ? 'Why on hold?' : 'Why delayed?'}
+              {form.status === 'On hold' && <span className={s.light}> · reason required</span>}
+            </div>
+            <div className={s.chips}>
+              {STATUS_REASONS.map((x) => (
+                <ToggleChip key={x} on={form.statusReason === x} onClick={() => setForm((f) => ({ ...f, statusReason: f.statusReason === x ? '' : x }))}>
+                  {x}
+                </ToggleChip>
+              ))}
+            </div>
+            <Textarea value={form.statusNote} onChange={set('statusNote')} rows={2} placeholder="e.g. Waiting for the client’s content / Razorpay KYC pending" />
+          </div>
+        )}
         <Field label="Project manager">
           <Select value={form.pm} onChange={set('pm')} options={members.map((m) => ({ value: m.id, label: m.name }))} />
         </Field>

@@ -14,6 +14,13 @@ function ProjectCard({ row, onOpen }) {
         <div className={s.sub}>
           {row.client} · {row.msName}
         </div>
+        {(I.p.statusReason || I.p.statusNote) && (
+          <div className={s.cardReason} title={I.p.statusNote || I.p.statusReason}>
+            {I.p.status === 'On hold' ? '⏸ ' : '⚠ '}
+            {I.p.statusReason || 'Note'}
+            {I.p.statusNote ? ` · ${I.p.statusNote}` : ''}
+          </div>
+        )}
       </div>
       <Meter
         left={<UsedOf used={row.usedLabel} of={row.budgetLabel} />}

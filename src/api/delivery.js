@@ -30,7 +30,8 @@ export function fromApiProject(p, prev) {
   const primary = (p.team || []).filter((t) => t.primary).map((t) => t.memberId);
   const docs = Array.isArray(p.documents) ? p.documents.map(fromApiDoc) : (prev && prev.docs) || [];
   return {
-    id: p.id, primary, name: p.name, client: p.client, clientEmail: p.clientEmail || '', service: (p.services || []).join(', '), status: p.status, pm: p.pmId, team,
+    id: p.id, primary, name: p.name, client: p.client, clientEmail: p.clientEmail || '',
+    statusReason: p.statusReason || '', statusNote: p.statusNote || '', statusNoteAt: p.statusNoteAt ? ms(p.statusNoteAt) : null, service: (p.services || []).join(', '), status: p.status, pm: p.pmId, team,
     start: dayMs(p.startDate), due: dayMs(p.dueDate), budgetHours: p.budgetLimit ?? null, value: p.value || 0, h: p.hue, prio: p.priority || 'Medium', alloc,
     brief: p.brief || '', links: (p.links || []).map((l) => ({ type: l.type, url: l.url })), docs,
     portal: p.portal ? { on: !!p.portal.on, ...(p.portal.token ? { token: p.portal.token } : {}) } : { on: false },
@@ -81,7 +82,7 @@ export const fromApiLog = (l) => ({
 
 /* ───────────── Adapters: store / form → API ───────────── */
 
-const PROJECT_FIELDS = { name: 'name', client: 'client', clientEmail: 'clientEmail', status: 'status', pm: 'pmId', value: 'value', prio: 'priority', brief: 'brief' };
+const PROJECT_FIELDS = { name: 'name', client: 'client', clientEmail: 'clientEmail', statusReason: 'statusReason', statusNote: 'statusNote', status: 'status', pm: 'pmId', value: 'value', prio: 'priority', brief: 'brief' };
 /** updProj patch → PATCH /projects/:id body. */
 export function toApiProjectPatch(patch) {
   const b = {};
@@ -98,7 +99,8 @@ export const msTeamBody = (r) => (r.team || []).map((id) => ({ memberId: id, hou
 
 /** New-project form → POST /projects body. */
 export const toApiProject = (m) => ({
-  name: m.name || '', client: m.client || '', clientEmail: (m.clientEmail || '').trim(), services: String(m.service || '').split(',').map((x) => x.trim()).filter(Boolean),
+  name: m.name || '', client: m.client || '', clientEmail: (m.clientEmail || '').trim(),
+  statusReason: m.statusReason || '', statusNote: (m.statusNote || '').trim(), services: String(m.service || '').split(',').map((x) => x.trim()).filter(Boolean),
   status: m.status, pmId: m.pm || undefined, startDate: m.start || '', dueDate: m.due || '',
   ...(Array.isArray(m.ms) && m.ms.length
     ? { milestones: m.ms.map((r) => ({ name: (r.name || '').trim(), dueDate: r.due, allocHours: Math.max(0, +r.hours || 0), team: msTeamBody(r) })), budgetHours: +m.budget || 0 }

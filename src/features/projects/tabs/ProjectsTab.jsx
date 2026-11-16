@@ -94,6 +94,7 @@ export default function ProjectsTab() {
   const setPj = useStore((st) => st.setPj);
   const setPjF = useStore((st) => st.setPjF);
   const updProj = useStore((st) => st.updProj);
+  const openModal = useStore((st) => st.openModal);
   const flash = useStore((st) => st.flash);
   const { openProject } = useProjectNav();
 
@@ -142,11 +143,13 @@ export default function ProjectsTab() {
     (id, k) => {
       const p = PRJ[id];
       if (p && p.status !== k) {
+        // Dropping a card on "On hold" asks why first.
+        if (k === 'On hold') { openModal('pstatus', { pid: id, status: 'On hold' }); return; }
         updProj(id, { status: k });
         flash(`${p.name} → ${k}`);
       }
     },
-    [PRJ, updProj, flash],
+    [PRJ, updProj, flash, openModal],
   );
 
   const tableCols = useMemo(() => tableColumns(periodLabel), [periodLabel]);

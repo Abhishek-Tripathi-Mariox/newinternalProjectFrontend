@@ -56,7 +56,7 @@ export default function MemberDrawer() {
     const yd = sod(T - DAY + NOON);
     const intBy = {};
     days.forEach((x) => { intBy[x] = internalOn(scoped.reports, sm.id, x).reduce((a, e) => a + e.h, 0); });
-    const dayMax = Math.max(10, ...days.map((x) => g(`d:${sm.id}:${x}`).all + intBy[x]));
+    const dayMax = Math.max(10, ...days.map((x) => g(`d:${sm.id}:${x}`).all));
     let anyInt = false;
     const used = new Set();
     const hist = days.map((x) => {

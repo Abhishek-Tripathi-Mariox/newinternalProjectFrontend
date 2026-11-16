@@ -149,6 +149,14 @@ export function buildProjectsModel(S, pj, now = serverNow()) {
     const s = msPeople[l.ms] || (msPeople[l.ms] = []);
     if (!s.includes(l.m)) s.push(l.m);
   });
+  // Internal (non-project) work from end-of-shift reports counts toward a person's day
+  // ('m:' and 'd:' totals) but never toward any project or milestone.
+  (S.reports || []).forEach((r) => {
+    const h = (r.internal || []).reduce((x, e) => x + (+e.h || 0), 0);
+    if (!h || !MEM[r.who]) return;
+    const l = { h, d: r.d };
+    add(`m:${r.who}`, l); add(`d:${r.who}:${r.d}`, l);
+  });
   const sumA = (list) => list.reduce((x, a) => ({
     all: x.all + a.all, today: x.today + a.today, yest: x.yest + a.yest, week: x.week + a.week, month: x.month + a.month, range: x.range + a.range,
   }), ZERO);

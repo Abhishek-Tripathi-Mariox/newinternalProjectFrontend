@@ -17,6 +17,7 @@ const MODALS = {
   integView: lazy(() => import('@/features/projects/IntegrationViewModal')),
   integ: lazy(() => import('@/features/projects/IntegrationModal')),
   pfu: lazy(() => import('@/features/project-followups/ProjectFollowUpModal')),
+  tt: lazy(() => import('@/features/team-tasks/TeamTaskModal')),
   user: lazy(() => import('@/features/users/UserModal')),
   brk: lazy(() => import('@/features/session/BreakModal')),
   eos: lazy(() => import('@/features/session/EndShiftModal')),

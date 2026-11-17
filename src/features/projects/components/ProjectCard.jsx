@@ -14,6 +14,18 @@ function ProjectCard({ row, onOpen }) {
         <div className={s.sub}>
           {row.client} · {row.msName}
         </div>
+        {(row.pmName || row.primaryNames.length > 0) && (
+          <div className={s.sub}>
+            {row.pmName ? `PM ${row.pmName}` : ''}
+            {row.pmName && row.primaryNames.length ? ' · ' : ''}
+            {row.primaryNames.length ? `★ ${row.primaryNames.join(', ')}` : ''}
+          </div>
+        )}
+        {(row.openT > 0 || row.openB > 0) && (
+          <div className={s.sub}>
+            {row.openT} open task{row.openT === 1 ? '' : 's'} · <span style={row.openB ? { color: 'oklch(0.52 0.18 25)', fontWeight: 600 } : undefined}>{row.openB} bug{row.openB === 1 ? '' : 's'}</span>
+          </div>
+        )}
         {(I.p.statusReason || I.p.statusNote) && (
           <div className={s.cardReason} title={I.p.statusNote || I.p.statusReason}>
             {I.p.status === 'On hold' ? '⏸ ' : '⚠ '}

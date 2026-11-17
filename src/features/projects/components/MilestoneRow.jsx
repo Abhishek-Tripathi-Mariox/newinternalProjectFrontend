@@ -1,4 +1,5 @@
 import { memo, useMemo, useState } from 'react';
+import { autoTeamHours } from '../lib/teamHours';
 import { Avatar, ConfirmButton, ProgressBar, Select } from '@/components/ui';
 import ToggleChip from './ToggleChip';
 import { GREEN, MUTED, RED, barColor, projectColor, tone } from '@/lib/color';
@@ -35,7 +36,8 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
   const toggleTeam = (id) => {
     if (!onTeam) return;
     const next = team.includes(id) ? team.filter((x) => x !== id) : team.concat(id);
-    onTeam(m.id, next, Object.fromEntries(next.map((x) => [x, +cur[x] || 0])));
+    setHrs(null);
+    onTeam(m.id, next, autoTeamHours(team, asNums(cur), next, m.alloc));
   };
   const saveHours = () => {
     if (!hrs || over || !onTeam) return;
@@ -164,11 +166,13 @@ function MilestoneRow({ m, project, current, used, T, canEdit, open, openMemberI
                   <span>Hours per person</span>
                   <span className={over ? s.overText : s.muted}>{hh(sum)} of {hh(m.alloc || 0)} milestone</span>
                 </div>
+                {team.length === 1 && <div className={s.muted}>Only one person — they get all of this milestone’s hours. Add someone to split them.</div>}
                 {team.map((id) => (
                   <label key={id} className={s.hourRow}>
                     <span>{(memberById[id] || { name: id }).name}</span>
                     <input
                       className={s.allocInput}
+                      disabled={team.length === 1}
                       type="number" min="0" step="1" placeholder="0"
                       value={cur[id] ?? ''}
                       onChange={(e) => setHrs({ ...cur, [id]: e.target.value })}

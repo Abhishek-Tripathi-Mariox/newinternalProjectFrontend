@@ -2,7 +2,8 @@ import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/store';
-import { authUser, can, hasTeamView, scopeState, firstProjectsTab, viewUser } from '@/domain/permissions';
+import { authUser, can, canAccessPath, hasTeamView, scopeState, firstProjectsTab, viewUser } from '@/domain/permissions';
+import { viewerId, visibleTasks } from '@/features/team-tasks/model';
 import { people } from '@/domain/attendance';
 import { useNow } from '@/hooks/useNow';
 import { DAY, sod } from '@/lib/date';
@@ -44,7 +45,7 @@ export default function Sidebar() {
   const st = useStore(
     useShallow((x) => ({
       leads: x.leads, fus: x.fus, pfus: x.pfus, members: x.members, projects: x.projects, logs: x.logs, tasks: x.tasks, bugs: x.bugs,
-      milestones: x.milestones, crs: x.crs, users: x.users, roles: x.roles, viewAs: x.viewAs, me: x.me, live: x.live, pjTab: x.pj?.tab, myId: x.auth?.uid, auth: x.auth,
+      milestones: x.milestones, crs: x.crs, users: x.users, roles: x.roles, viewAs: x.viewAs, me: x.me, live: x.live, teamTasks: x.teamTasks, pjTab: x.pj?.tab, myId: x.auth?.uid, auth: x.auth,
     })),
   );
   const setPj = useStore((x) => x.setPj);
@@ -65,6 +66,8 @@ export default function Sidebar() {
     return {
       showLive: !st.viewAs,
       showAtt: hasTeamView(st),
+      showTT: canAccessPath(st, '/team-tasks'),
+      ttOpen: visibleTasks(st).filter((t) => t.a === viewerId(st) && t.status !== 'Done').length,
       showDash: c('dash'),
       showLeads: c('leads'),
       showFu: c('fu'),
@@ -108,6 +111,15 @@ export default function Sidebar() {
         {nav.showAtt && <NavItem to="/attendance" active={isAt('/attendance')}>Attendance</NavItem>}
         {nav.showAtt && <NavItem to="/reports" active={isAt('/reports')}>Reports</NavItem>}
         {nav.showDash && <NavItem to="/dashboard" active={isAt('/dashboard')}>Dashboard</NavItem>}
+        {nav.showTT && (
+          <NavItem
+            to="/team-tasks"
+            active={isAt('/team-tasks')}
+            meta={nav.ttOpen > 0 ? <span className={s.badgeAmber} title="Open tasks assigned to you">{nav.ttOpen}</span> : null}
+          >
+            <span>Team tasks</span>
+          </NavItem>
+        )}
 
         {(nav.showLeads || nav.showFu) && <div className={s.section}>Sales</div>}
         {nav.showLeads && (

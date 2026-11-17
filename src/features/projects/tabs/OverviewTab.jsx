@@ -9,6 +9,7 @@ import { addDays, dLabel, isSunday, workdaysSoFar } from '@/lib/date';
 import { hh, money, pctW } from '@/lib/format';
 import { PROJECT_STATUS, TEAMS } from '@/config/constants';
 import { HealthPill } from '../components/bits';
+import ProjectsGlance from './ProjectsGlance';
 import { useProjectNav } from '../hooks/useProjectNav';
 import { NEUTRAL_DOT, STATUS_KEYS } from '../lib/view';
 import s from './tabs.module.css';
@@ -29,7 +30,7 @@ function HourCard({ label, value, sub, ratio }) {
 /** Projects → Overview: status cards, hour cards, hours by project / team, missing timesheets, needs attention. */
 export default function OverviewTab() {
   const model = useProjectsModel();
-  const { projects, logs, members } = useScoped();
+  const { projects, logs, members, tasks, bugs } = useScoped();
   const flash = useStore((st) => st.flash);
   const { openProject, openMember, goTab } = useProjectNav();
 
@@ -115,6 +116,8 @@ export default function OverviewTab() {
           <HourCard key={c.label} {...c} />
         ))}
       </div>
+
+      <ProjectsGlance model={model} tasks={tasks} bugs={bugs} openProject={openProject} openMember={openMember} />
 
       <div className={s.split}>
         <section className={s.card}>

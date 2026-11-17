@@ -1,0 +1,23 @@
+.page { display: flex; flex-direction: column; gap: 16px; }
+.header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.h1 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.015em; }
+.sub { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+.taskCell { display: flex; flex-direction: column; gap: 3px; min-width: 240px; max-width: 460px; }
+.title { font-weight: 600; }
+.notes { font-size: 12.5px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.upd { font-size: 12.5px; color: oklch(0.42 0.1 265); }
+.updInput {
+  font: inherit; font-size: 12.5px; border: 1px dashed var(--border-input, #ccd); border-radius: 6px; padding: 3px 7px;
+  background: transparent; color: inherit; width: 100%; max-width: 420px;
+}
+.updInput:focus { outline: none; border-style: solid; border-color: oklch(0.6 0.15 265); background: var(--surface, #fff); }
+.nowrap { white-space: nowrap; }
+.muted { color: var(--muted); }
+.actions { display: inline-flex; gap: 6px; justify-content: flex-end; }
+.links { display: flex; gap: 6px; flex-wrap: wrap; }
+.linkChip, .linkChipLead {
+  font: inherit; font-size: 11.5px; font-weight: 600; border: 0; border-radius: 999px; padding: 1px 8px; cursor: pointer;
+  background: oklch(0.95 0.03 265); color: oklch(0.42 0.12 265); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.linkChipLead { background: oklch(0.95 0.04 150); color: oklch(0.4 0.12 150); }
+.linkChip:hover, .linkChipLead:hover { filter: brightness(0.96); }

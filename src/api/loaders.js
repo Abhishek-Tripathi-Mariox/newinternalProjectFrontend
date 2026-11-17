@@ -4,13 +4,14 @@ import { loadDelivery } from './delivery';
 import { loadPeople } from './people';
 import { loadWorkday } from './workday';
 import { loadMasters } from './masters';
+import { loadTeamTasks } from './teamTasks';
 
 /**
  * Bootstrap data after sign-in. Each domain loader returns a partial store state; loaders run in
  * parallel. A 403 (role can't see that module) yields empty data instead of failing the boot.
  * Loaders receive the signed-in principal (`me`) so they can skip modules the role can't open.
  */
-const LOADERS = [['sales', loadSales], ['delivery', loadDelivery], ['people', loadPeople], ['workday', loadWorkday], ['masters', loadMasters]];
+const LOADERS = [['sales', loadSales], ['delivery', loadDelivery], ['people', loadPeople], ['workday', loadWorkday], ['masters', loadMasters], ['teamTasks', loadTeamTasks]];
 
 export async function loadAll(me) {
   const parts = await Promise.all(LOADERS.map(async ([name, fn]) => {

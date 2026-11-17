@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { autoTeamHours } from './lib/teamHours';
 import { Button, DocumentsPanel, ErrorText, Field, Input, LinksEditor, Modal, Select, Textarea } from '@/components/ui';
 import { useStore } from '@/store';
 import { useScoped } from '@/hooks/useScoped';
@@ -101,7 +102,16 @@ export default function NewProjectModal({ editId, onClose }) {
     const next = { ...f, [k]: e.target.value };
     return next.ms ? { ...next, ms: respread(next.ms, next.start, next.due) } : next;
   });
-  const setMs = (key, patch) => setForm((f) => ({ ...f, ms: f.ms.map((r) => (r.key === key ? { ...r, ...patch } : r)) }));
+  // One person on a milestone follows its hours.
+  const setMs = (key, patch) => setForm((f) => ({
+    ...f,
+    ms: f.ms.map((r) => {
+      if (r.key !== key) return r;
+      const next = { ...r, ...patch };
+      if ('hours' in patch && (next.team || []).length === 1) next.teamHours = { [next.team[0]]: next.hours };
+      return next;
+    }),
+  }));
   const addMs = () => setForm((f) => ({ ...f, ms: f.ms.concat({ key: rowKey++, name: '', due: f.due, hours: '', auto: false, team: [], teamHours: {} }) }));
   const [teamRow, setTeamRow] = useState(null); // milestone row whose team picker is open
   // Picking someone who is not on the project team adds them to it as well.
@@ -111,7 +121,14 @@ export default function NewProjectModal({ editId, onClose }) {
     return {
       ...f,
       team: adding && id !== f.pm && !f.team.includes(id) ? f.team.concat(id) : f.team,
-      ms: f.ms.map((r) => (r.key === key ? { ...r, team: adding ? (r.team || []).concat(id) : r.team.filter((x) => x !== id) } : r)),
+      ms: f.ms.map((r) => {
+        if (r.key !== key) return r;
+        const prev = r.team || [];
+        const next = adding ? prev.concat(id) : prev.filter((x) => x !== id);
+        const nums = Object.fromEntries(prev.map((x) => [x, +((r.teamHours || {})[x]) || 0]));
+        const auto = autoTeamHours(prev, nums, next, r.hours);
+        return { ...r, team: next, teamHours: Object.fromEntries(next.map((x) => [x, auto[x] ? String(auto[x]) : ''])) };
+      }),
     };
   });
   const setMemberHours = (key, id, v) => setForm((f) => ({ ...f, ms: f.ms.map((r) => (r.key === key ? { ...r, teamHours: { ...(r.teamHours || {}), [id]: v } } : r)) }));
@@ -144,7 +161,8 @@ export default function NewProjectModal({ editId, onClose }) {
     const ms = f.ms.map((r, i) => {
       const h = i === n - 1 ? left : Math.round(B * (tpl ? tpl[i] : 1 / n));
       left -= h;
-      return { ...r, hours: String(Math.max(0, h)) };
+      const hours = String(Math.max(0, h));
+      return (r.team || []).length === 1 ? { ...r, hours, teamHours: { [r.team[0]]: hours } } : { ...r, hours };
     });
     return { ...f, ms };
   });
@@ -390,10 +408,12 @@ export default function NewProjectModal({ editId, onClose }) {
                           <button type="button" className={s.addBtn} onClick={() => splitEvenly(r.key)}>Split evenly</button>
                         )}
                       </div>
+                      {r.team.length === 1 && <span className={s.light}>Only one person — they get all of this milestone’s hours.</span>}
                       {r.team.map((id) => (
                         <label key={id} className={s.msHourRow}>
                           <span>{memberName(id)}</span>
                           <Input
+                            disabled={r.team.length === 1}
                             type="number" min="0" step="1" placeholder="0"
                             value={(r.teamHours || {})[id] ?? ''}
                             onChange={(e) => setMemberHours(r.key, id, e.target.value)}

@@ -9,7 +9,7 @@ export const PJ_FILTER_DEFAULT = { q: '', date: 'week', from: '', to: '', status
 export function emptyData() {
   return {
     leads: [], fus: [], owners: [],
-    members: [], projects: [], milestones: [], logs: [], tasks: [], bugs: [], crs: [], pfus: [], integ: {},
+    members: [], projects: [], milestones: [], logs: [], tasks: [], bugs: [], crs: [], pfus: [], integ: {}, teamTasks: [],
     users: [], roles: [], audit: [],
     live: null, attLog: [], reports: [],
   };

@@ -412,7 +412,15 @@ export const createDeliverySlice = (set, get) => {
     },
 
     updMs(id, patch) {
-      set((s) => ({ milestones: patchById(s.milestones, id, patch) }));
+      set((s) => ({
+        milestones: s.milestones.map((x) => {
+          if (x.id !== id) return x;
+          const next = { ...x, ...patch };
+          // One person on the milestone follows its hours (the server does the same).
+          if ('alloc' in patch && (x.team || []).length === 1) next.teamHours = { [x.team[0]]: +patch.alloc || 0 };
+          return next;
+        }),
+      }));
       const send = () => api.patch(`/milestones/${id}`, toApiMilestonePatch(patch)).catch((e) => { get().flash(msg(e)); resyncDelivery(); });
       if ('name' in patch || 'alloc' in patch || 'notes' in patch) {
         const key = `ms:${id}:${Object.keys(patch).join(',')}`;
@@ -421,7 +429,9 @@ export const createDeliverySlice = (set, get) => {
           if (!m) return;
           const body = toApiMilestonePatch(Object.fromEntries(Object.keys(patch).map((k) => [k, m[k]])));
           if (body.name !== undefined && !body.name.trim()) return; // blur fills "Milestone n"
-          api.patch(`/milestones/${id}`, body).catch((e) => { get().flash(msg(e)); resyncDelivery(); });
+          api.patch(`/milestones/${id}`, body)
+            .then((dto) => { if (dto && dto.id && 'alloc' in patch) set((st) => ({ milestones: patchById(st.milestones, id, { teamHours: fromApiMilestone(dto).teamHours }) })); })
+            .catch((e) => { get().flash(msg(e)); resyncDelivery(); });
         });
       } else {
         send();

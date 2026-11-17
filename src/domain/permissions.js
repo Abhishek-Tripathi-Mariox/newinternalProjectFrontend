@@ -99,7 +99,7 @@ export function scopeState(S) {
 
 /**
  * Active people below `userId` in the "Reports to" chain (direct and indirect) from the users list:
- * [{pid, name, role, team}]. Clients and Super Admins are left out.
+ * [{id, pid, name, role, team}]. Clients and Super Admins are left out.
  */
 export function reporteesFromUsers(state, userId) {
   const users = (state.users || []).filter((u) => u.status === 'Active' && u.role !== 'r-client' && u.role !== 'r-super');
@@ -108,7 +108,7 @@ export function reporteesFromUsers(state, userId) {
   let level = [userId];
   for (let depth = 0; depth < 10 && level.length; depth++) {
     const next = users.filter((u) => level.includes(u.reports) && !seen.has(u.id));
-    next.forEach((u) => { seen.add(u.id); out.push({ pid: pidOf(u), name: u.name, role: u.title || '', team: '' }); });
+    next.forEach((u) => { seen.add(u.id); out.push({ id: u.id, pid: pidOf(u), name: u.name, role: u.title || '', team: '' }); });
     level = next.map((u) => u.id);
   }
   return out;
@@ -145,6 +145,8 @@ export const hasTeamView = (state) => !state.viewAs || can(state, 'att', 'v');
 
 /** May the current view open this route? (Original noAccess logic.) `tab` = pj.tab for /projects. */
 export function canAccessPath(state, path, tab = state.pj && state.pj.tab) {
+  // Team tasks: every staff account (not client portal users).
+  if (path === '/team-tasks' || path.startsWith('/team-tasks/')) return ((viewUser(state) || {}).role || '') !== 'r-client';
   const key = Object.keys(MODULE_OF_PATH).find((p) => path === p || path.startsWith(`${p}/`));
   if (!key) return true;
   const mod = key === '/projects' ? MODULE_OF_TAB[tab] || 'projects' : MODULE_OF_PATH[key];

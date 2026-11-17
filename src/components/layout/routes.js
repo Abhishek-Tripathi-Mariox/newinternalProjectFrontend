@@ -8,6 +8,7 @@ export const PAGES = {
   '/follow-ups': { title: 'Follow-ups', crumb: 'Sales' },
   '/lead-setup': { title: 'Lead setup', crumb: 'Sales' },
   '/projects': { title: 'Projects', crumb: 'Delivery' },
+  '/team-tasks': { title: 'Team tasks', crumb: 'Work' },
   '/users': { title: 'Users & roles', crumb: 'Admin' },
 };
 

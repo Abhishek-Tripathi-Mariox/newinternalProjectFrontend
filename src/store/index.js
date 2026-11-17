@@ -6,6 +6,7 @@ import { createDeliverySlice } from './slices/delivery';
 import { createPeopleSlice } from './slices/people';
 import { createWorkdaySlice } from './slices/workday';
 import { createSessionSlice } from './slices/session';
+import { createTeamTasksSlice } from './slices/teamTasks';
 
 export { registerNavigate } from './navigation';
 
@@ -26,6 +27,7 @@ export const useStore = create((set, get) => ({
   ...createDeliverySlice(set, get),
   ...createPeopleSlice(set, get),
   ...createWorkdaySlice(set, get),
+  ...createTeamTasksSlice(set, get),
   // Last: session owns login / logout / bootstrap.
   ...createSessionSlice(set, get),
 }));

@@ -142,8 +142,8 @@ export const createWorkdaySlice = (set, get) => {
           const str = (v) => (v === '' || v == null ? '' : String(v));
           get().openModal('eos', {
             who: f.who || pid, sales: !!f.sales, done: f.done || '', blockers: f.blockers || '', plan: f.plan || '', outcome: f.outcome || '',
-            calls: str(f.calls), meetings: str(f.meetings),
-            ...(f.sales ? {} : {
+            calls: str(f.calls), meetings: str(f.meetings), internalRows: [],
+            ...(f.sales ? { leadRows: (f.leadRows || []).map((r) => ({ lead: r.lead, kind: r.kind || 'call', note: r.note || '', next: r.next || '' })) } : {
               rows: (f.rows || []).map((r) => ({ p: r.p || '', ms: r.ms || '', h: str(r.h), note: r.note || '' })),
               pmRows: (f.pmRows || []).map((r) => ({ p: r.p, st: r.st || 'On track', note: r.note || '' })),
             }),
@@ -191,7 +191,11 @@ export const createWorkdaySlice = (set, get) => {
         const blank = internal.findIndex((r) => !(r.note || '').trim());
         if (blank >= 0) return `Describe the internal work you did (row ${blank + 1}).`;
         if (!m.done.trim()) return 'Write what you completed today.';
-      } else if (!m.outcome.trim()) return 'Write a short summary of your day.';
+      } else {
+        if (!m.outcome.trim()) return 'Write a short summary of your day.';
+        const blank = (m.internalRows || []).filter((r) => +r.h > 0).findIndex((r) => !(r.note || '').trim());
+        if (blank >= 0) return `Describe the internal work you did (row ${blank + 1}).`;
+      }
       if (!isSelf(pid)) return 'Only the person themself can submit their end-of-shift report.';
       let res;
       try {
@@ -200,7 +204,8 @@ export const createWorkdaySlice = (set, get) => {
           calls: m.calls === '' ? 0 : +m.calls || 0, meetings: m.meetings === '' ? 0 : +m.meetings || 0,
           rows: m.sales ? [] : (m.rows || []).filter((r) => r.p).map((r) => ({ p: r.p, ms: r.ms || null, h: r.h === '' ? 0 : +r.h || 0, note: r.note || '' })),
           pmRows: (m.pmRows || []).map((x) => ({ p: x.p, st: x.st, note: x.note || '' })),
-          internalRows: m.sales ? [] : (m.internalRows || []).filter((r) => +r.h > 0).map((r) => ({ cat: r.cat || 'Other', h: +r.h || 0, note: r.note || '' })),
+          internalRows: (m.internalRows || []).filter((r) => +r.h > 0).map((r) => ({ cat: r.cat || 'Other', h: +r.h || 0, note: r.note || '' })),
+          leadRows: m.sales ? (m.leadRows || []).filter((r) => r.lead && ((r.note || '').trim() || r.next)).map((r) => ({ lead: r.lead, kind: r.kind || 'call', note: (r.note || '').trim(), next: r.next || '' })) : [],
         });
       } catch (e) {
         return e.message;
@@ -208,8 +213,9 @@ export const createWorkdaySlice = (set, get) => {
       // The person stays signed in (logging out is separate from ending the shift).
       set({ modal: null });
       // Today's time logs were replaced and a report was saved: reload logs, attendance and reports.
-      await get().resync(['delivery', 'workday']).catch(() => {});
-      get().flash("Report submitted · today's work is done — see you tomorrow");
+      // Sales rows also add lead history and follow-ups.
+      await get().resync(m.sales ? ['sales', 'workday'] : ['delivery', 'workday']).catch(() => {});
+      get().flash(`${(res && res.message) || 'Report submitted · shift ended'} — today's work is done, see you tomorrow`);
       return undefined;
     },
   };

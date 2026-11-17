@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useScoped } from '@/hooks/useScoped';
+import { DAY, sod, fday, clock } from '@/lib/date';
 import { useStore } from '@/store';
 import { useNow } from '@/hooks/useNow';
 import { curMs } from '@/domain/projects';
@@ -103,6 +105,65 @@ function HoursTotal({ projectH, internalH, m }) {
   );
 }
 
+const LEAD_KINDS = [['call', 'Call'], ['meeting', 'Meeting'], ['email', 'Email'], ['whatsapp', 'WhatsApp'], ['note', 'Note']].map(([value, label]) => ({ value, label }));
+const EMPTY_LEAD = { lead: '', kind: 'call', note: '', next: '' };
+const leadName = (l) => (l ? l.company || l.contact || l.id : '');
+
+/** Sales: what happened on each lead today and when to follow up next. */
+function LeadsWorked({ rows, setRows, pid, today }) {
+  const { leads } = useScoped();
+  const mine = useMemo(() => (leads || []).filter((l) => l.owner === pid), [leads, pid]);
+  const byId = useMemo(() => Object.fromEntries((leads || []).map((l) => [l.id, l])), [leads]);
+  const opts = useMemo(() => [{ value: '', label: 'Pick a lead…' }].concat(
+    mine.slice().sort((a, b) => leadName(a).localeCompare(leadName(b))).map((l) => ({ value: l.id, label: `${leadName(l)} · ${l.status}` })),
+  ), [mine]);
+  const setRow = (i, patch) => setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const minNext = new Date(today + DAY + 432e5).toISOString().slice(0, 10);
+  return (
+    <div className={s.section}>
+      <SectionHead title="Leads worked today" sub="Leads you touched today or had follow-ups on are listed. Notes go to the lead’s history; a next date schedules a follow-up call." />
+      {rows.length > 0 && <div className={`${s.leadGrid} ${s.hoursHead}`}><span>Lead</span><span>What</span><span>What happened</span><span>Next follow-up</span><span /></div>}
+      {rows.map((r, i) => {
+        const l = byId[r.lead];
+        const known = !r.lead || opts.some((o) => o.value === r.lead);
+        return (
+          <div key={i} className={s.leadGrid}>
+            <Select value={r.lead} options={known ? opts : opts.concat({ value: r.lead, label: leadName(l) || r.lead })} onChange={(e) => setRow(i, { lead: e.target.value })} aria-label="Lead" />
+            <Select value={r.kind} options={LEAD_KINDS} onChange={(e) => setRow(i, { kind: e.target.value })} aria-label="Activity" />
+            <Input value={r.note} placeholder="e.g. Asked for a revised quote, decision by Friday" aria-label="What happened" onChange={(e) => setRow(i, { note: e.target.value })} />
+            <Input type="date" min={minNext} value={r.next} aria-label="Next follow-up date" onChange={(e) => setRow(i, { next: e.target.value })} />
+            <IconButton variant="plain" label="Remove row" onClick={() => setRows(rows.filter((_, j) => j !== i))} />
+          </div>
+        );
+      })}
+      <button type="button" className={s.addRow} onClick={() => setRows(rows.concat({ ...EMPTY_LEAD }))}>+ Add lead</button>
+    </div>
+  );
+}
+
+/** Sales: today's and overdue follow-ups still open — tick them off before leaving. */
+function PendingFollowUps({ pid, today }) {
+  const { fus, leads } = useScoped();
+  const toggleFu = useStore((st) => st.toggleFu);
+  const byId = useMemo(() => Object.fromEntries((leads || []).map((l) => [l.id, l])), [leads]);
+  const list = useMemo(() => (fus || []).filter((f) => f.owner === pid && !f.done && f.due < today + DAY).sort((a, b) => a.due - b.due), [fus, pid, today]);
+  if (!list.length) return null;
+  return (
+    <div className={s.section}>
+      <SectionHead title={`Follow-ups still open · ${list.length}`} sub="Due today or overdue — mark the ones you finished." />
+      <div className={s.fuList}>
+        {list.map((f) => (
+          <div key={f.id} className={s.fuRow}>
+            <span className={f.due < today ? s.fuLate : s.fuWhen}>{f.due < today ? fday(f.due) : clock(f.due)}</span>
+            <span className={s.fuTitle}>{f.type} · {f.title}{f.leadId && byId[f.leadId] ? <span className={s.muted}> — {leadName(byId[f.leadId])}</span> : null}</span>
+            <Button size="sm" variant="secondary" onClick={() => toggleFu(f.id)}>Mark done</Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** PM status per managed project. */
 function PmStatus({ pmRows, setPmRows, projectName }) {
   const setPm = (i, patch) => setPmRows(pmRows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
@@ -139,6 +200,7 @@ export default function EndShiftModal({ onClose, ...initial }) {
     rows: sales ? [] : (initial.rows && initial.rows.length ? initial.rows : [{ ...EMPTY_ROW }]),
     pmRows: initial.pmRows || [],
     internalRows: initial.internalRows || [],
+    leadRows: sales ? (initial.leadRows || []) : [],
   }));
   const [err, setErr] = useState(initial.err || '');
   const [busy, setBusy] = useState(false);
@@ -214,6 +276,12 @@ export default function EndShiftModal({ onClose, ...initial }) {
                 ))}
               </div>
             </div>
+            <PendingFollowUps pid={pid} today={sod(now)} />
+            <LeadsWorked rows={form.leadRows} setRows={(leadRows) => set({ leadRows })} pid={pid} today={sod(now)} />
+            <InternalWork rows={form.internalRows} setRows={(internalRows) => set({ internalRows })} />
+            {form.internalRows.reduce((x, r) => x + (+r.h || 0), 0) > m.workedH + 0.01 && (
+              <div className={s.overMsg}>Internal work can’t be more than the time you worked today ({m.workedLabel}).</div>
+            )}
             <div className={s.report}>
               <div className={s.sectionTitle}>Daily report</div>
               <div className={s.numCols}>

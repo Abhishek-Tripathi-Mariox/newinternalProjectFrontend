@@ -3,7 +3,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/store';
 import { useScoped } from '@/hooks/useScoped';
 import { can } from '@/domain/permissions';
-import { Button, ErrorText, Field, Input, Modal, Select, Textarea } from '@/components/ui';
+import { Button, DocumentList, ErrorText, Field, FileDropzone, Input, Modal, Select, Textarea } from '@/components/ui';
+import { useAttach } from '@/features/projects/hooks/useAttach';
 import { teamTasksApi } from '@/api/teamTasks';
 import { ymd } from '@/lib/date';
 import { TT_STATUSES, isPreview, previewAssignees, viewerId } from './model';
@@ -23,8 +24,9 @@ export default function TeamTaskModal({ editId, assignee, projectId, leadId, onC
 
   const [people, setPeople] = useState(() => (preview ? previewAssignees(st) : null));
   const [form, setForm] = useState(() => (editing
-    ? { title: editing.title, notes: editing.notes, prio: editing.prio, due: editing.due ? ymd(editing.due) : '', a: editing.a, status: editing.status, p: editing.p, lead: editing.lead }
-    : { title: '', notes: '', prio: 'Medium', due: '', a: assignee || '', status: '', p: projectId || '', lead: leadId || '' }));
+    ? { title: editing.title, notes: editing.notes, prio: editing.prio, due: editing.due ? ymd(editing.due) : '', a: editing.a, status: editing.status, p: editing.p, lead: editing.lead, atts: editing.atts || [] }
+    : { title: '', notes: '', prio: 'Medium', due: '', a: assignee || '', status: '', p: projectId || '', lead: leadId || '', atts: [] }));
+  const attach = useAttach();
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -104,6 +106,14 @@ export default function TeamTaskModal({ editId, assignee, projectId, leadId, onC
           <Field label="Priority"><Select {...bind('prio')} options={PRIO_OPTS} /></Field>
           {editing && <Field label="Status"><Select {...bind('status')} options={STATUS_OPTS} /></Field>}
         </div>
+        <Field label="Attachments">
+          <FileDropzone compact hint="Screenshots, docs, sheets · up to 10 MB each" onFiles={(files) => attach(files, (atts) => setForm((f) => ({ ...f, atts: f.atts.concat(atts) })))} />
+        </Field>
+        <DocumentList
+          docs={form.atts}
+          onKind={(i, kind) => setForm((f) => ({ ...f, atts: f.atts.map((x, j) => (j === i ? { ...x, kind } : x)) }))}
+          onRemove={(i) => setForm((f) => ({ ...f, atts: f.atts.filter((_, j) => j !== i) }))}
+        />
         {err && <ErrorText>{err}</ErrorText>}
       </div>
     </Modal>

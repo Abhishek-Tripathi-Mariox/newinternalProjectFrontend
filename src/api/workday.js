@@ -71,6 +71,7 @@ export function fromApiReport(r) {
     rows: (r.rows || []).map((x) => ({ p: x.p, ms: x.ms || null, h: num(x.h), note: x.note || '' })),
     pm: (r.pm || r.pmRows || []).map((x) => ({ p: x.p, st: x.st, note: x.note || '' })),
     internal: (r.internal || r.internalRows || []).map((x) => ({ cat: x.cat || 'Other', h: num(x.h), note: x.note || '' })),
+    leadRows: (r.leadRows || []).map((x) => ({ lead: x.lead, company: x.company || x.lead, kind: x.kind || 'call', note: x.note || '', next: x.next || '' })),
   };
 }
 

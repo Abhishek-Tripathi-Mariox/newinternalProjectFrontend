@@ -61,3 +61,19 @@
   .hoursHead { display: none; }
   .pmGrid { grid-template-columns: 1fr; }
 }
+
+.leadGrid {
+  display: grid; grid-template-columns: minmax(0, 1.4fr) 110px minmax(0, 2fr) 140px 28px;
+  gap: 8px; align-items: center;
+}
+.fuList { display: flex; flex-direction: column; border: 1px solid var(--divider, oklch(0.92 0.005 265)); border-radius: 10px; overflow: hidden; }
+.fuRow { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 12px; font-size: 13px; }
+.fuRow + .fuRow { border-top: 1px solid var(--divider, oklch(0.92 0.005 265)); }
+.fuWhen { color: var(--muted); font-size: 12.5px; }
+.fuLate { color: oklch(0.52 0.18 25); font-weight: 600; font-size: 12.5px; }
+.fuTitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 720px) {
+  .leadGrid { grid-template-columns: 1fr 1fr; }
+  .fuRow { grid-template-columns: 1fr auto; }
+  .fuWhen, .fuLate { grid-column: 1 / -1; }
+}

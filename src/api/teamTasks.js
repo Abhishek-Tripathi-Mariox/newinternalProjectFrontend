@@ -1,4 +1,5 @@
 import { api, getAll, dayMs, ms } from './client';
+import { fromApiDoc } from './files';
 
 /**
  * Team tasks API (/team-tasks): tasks given down the "Reports to" hierarchy, independent of projects.
@@ -27,6 +28,7 @@ export const fromApiTeamTask = (t) => ({
   canEdit: !!t.canEdit,
   canDelete: !!t.canDelete,
   canStatus: !!t.canUpdateStatus,
+  atts: (t.attachments || []).map((d) => ({ ...fromApiDoc(d), by: d.uploadedBy })),
 });
 
 /** Modal form → API body. */
@@ -45,6 +47,8 @@ export const teamTasksApi = {
   create: (body) => api.post('/team-tasks', body),
   update: (id, body) => api.patch(`/team-tasks/${id}`, body),
   remove: (id) => api.del(`/team-tasks/${id}`),
+  upload: (id, files) => api.upload(`/team-tasks/${id}/attachments`, files),
+  removeDoc: (docId) => api.del(`/documents/${docId}`),
   assignees: () => api.get('/team-tasks/assignees'),
 };
 

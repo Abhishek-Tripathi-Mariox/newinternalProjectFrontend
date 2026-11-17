@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/store';
 import { useNow } from '@/hooks/useNow';
-import { Button, ConfirmButton, DataTable, FilterChips, HuePill, SearchInput, Select, Tabs, Toolbar } from '@/components/ui';
+import { Button, ConfirmButton, DataTable, DocumentList, FilterChips, HuePill, SearchInput, Select, Tabs, Toolbar } from '@/components/ui';
 import { fday, sod } from '@/lib/date';
 import { PRIO_HUE, STATUS_HUE, TT_STATUSES, isPreview, tabTest, teamIdsOf, viewerId, visibleTasks } from './model';
 import s from './TeamTasksPage.module.css';
@@ -35,6 +35,8 @@ export default function TeamTasksPage() {
   const openModal = useStore((x) => x.openModal);
   const updateTeamTask = useStore((x) => x.updateTeamTask);
   const delTeamTask = useStore((x) => x.delTeamTask);
+  const attachTeamTask = useStore((x) => x.attachTeamTask);
+  const [showFiles, setShowFiles] = useState(null);
   const setPj = useStore((x) => x.setPj);
   const selectLead = useStore((x) => x.selectLead);
 
@@ -90,6 +92,12 @@ export default function TeamTasksPage() {
             </div>
           )}
           {t.notes && <div className={s.notes}>{t.notes}</div>}
+          {t.atts.length > 0 && (
+            <button type="button" className={s.filesBtn} onClick={() => setShowFiles(showFiles === t.id ? null : t.id)} aria-expanded={showFiles === t.id}>
+              📎 {t.atts.length} file{t.atts.length === 1 ? '' : 's'} {showFiles === t.id ? '▴' : '▾'}
+            </button>
+          )}
+          {showFiles === t.id && <DocumentList docs={t.atts} editable={false} />}
           <ProgressNote key={`${t.id}-${t.upd}`} t={t} onSave={(v) => updateTeamTask(t.id, { upd: v })} />
         </div>
       ),
@@ -112,6 +120,12 @@ export default function TeamTasksPage() {
     {
       key: 'act', label: '', align: 'right', render: (t) => (
         <div className={s.actions}>
+          {t.canEdit && (
+            <label className={s.attachBtn} title="Attach files">
+              📎
+              <input type="file" multiple hidden onChange={(e) => { const f = Array.from(e.target.files || []); e.target.value = ''; if (f.length) attachTeamTask(t.id, f.slice(0, 10)); }} />
+            </label>
+          )}
           {t.canEdit && <Button size="sm" variant="secondary" onClick={() => openModal('tt', { editId: t.id })}>Edit</Button>}
           {t.canDelete && <ConfirmButton size="sm" onConfirm={() => delTeamTask(t.id)} confirmLabel="Delete?">Delete</ConfirmButton>}
         </div>

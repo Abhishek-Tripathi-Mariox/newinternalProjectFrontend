@@ -6,7 +6,11 @@ const upsert = (arr, item) => ((arr || []).some((x) => x.id === item.id) ? arr.m
 
 /** Team tasks: given down the "Reports to" hierarchy (independent of projects). */
 export const createTeamTasksSlice = (set, get) => ({
-  /** Create / edit from the modal form. Returns an error message or undefined. */
+  /**
+   * Create / edit from the modal form. `f.atts` = the edited attachment list: saved docs
+   * ({id}) and pending files ({file}); removed saved docs are deleted, pending ones uploaded.
+   * Returns an error message or undefined.
+   */
   async saveTeamTask(f, editId) {
     if (!f.title.trim()) return 'Add a title.';
     if (!f.a) return 'Pick who this task is for.';
@@ -20,7 +24,14 @@ export const createTeamTasksSlice = (set, get) => ({
         return undefined;
       }
       saved = fromApiTeamTask(res);
+      const before = editId ? ((get().teamTasks || []).find((x) => x.id === editId) || {}).atts || [] : [];
+      const keep = new Set((f.atts || []).filter((a) => a.id).map((a) => a.id));
+      for (const d of before) if (!keep.has(d.id)) await teamTasksApi.removeDoc(d.id);
+      const files = (f.atts || []).filter((a) => a.file).map((a) => a.file);
+      for (let i = 0; i < files.length; i += 10) saved = fromApiTeamTask(await teamTasksApi.upload(saved.id, files.slice(i, i + 10)));
+      if (before.some((d) => !keep.has(d.id)) && !files.length) saved = { ...saved, atts: saved.atts.filter((d) => keep.has(d.id)) };
     } catch (e) {
+      if (saved) set((s) => ({ teamTasks: upsert(s.teamTasks, saved) }));
       return msg(e);
     }
     set((s) => ({ teamTasks: upsert(s.teamTasks, saved), modal: null }));
@@ -40,6 +51,17 @@ export const createTeamTasksSlice = (set, get) => ({
     );
     if (res && !res.removed) set((s) => ({ teamTasks: upsert(s.teamTasks, fromApiTeamTask(res)) }));
     return !!res;
+  },
+
+  /** Assignee / manager adds files straight from the list. */
+  async attachTeamTask(id, files) {
+    try {
+      const res = await teamTasksApi.upload(id, files);
+      set((s) => ({ teamTasks: upsert(s.teamTasks, fromApiTeamTask(res)) }));
+      get().flash(`${files.length} file${files.length === 1 ? '' : 's'} attached`);
+    } catch (e) {
+      get().flash(msg(e));
+    }
   },
 
   async delTeamTask(id) {

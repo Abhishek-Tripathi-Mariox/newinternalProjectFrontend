@@ -55,7 +55,7 @@ export const teamTasksApi = {
   create: (body) => api.post('/team-tasks', body),
   update: (id, body) => api.patch(`/team-tasks/${id}`, body),
   remove: (id) => api.del(`/team-tasks/${id}`),
-  upload: (id, files) => api.upload(`/team-tasks/${id}/attachments`, files),
+  upload: (id, files, title = '') => api.upload(`/team-tasks/${id}/attachments`, files, title.trim() ? { title: title.trim() } : {}),
   removeDoc: (docId) => api.del(`/documents/${docId}`),
   assignees: () => api.get('/team-tasks/assignees'),
 };

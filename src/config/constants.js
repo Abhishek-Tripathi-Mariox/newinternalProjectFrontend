@@ -52,6 +52,7 @@ export const MODULES = [
   ['ts', 'Timesheets', 'Log and view hours'],
   ['team', 'Team & hours', 'Hours and allocation per person'],
   ['users', 'Users & roles', 'Users, roles and permissions'],
+  ['tt', 'Team tasks', 'Give and track tasks · Team = self + people who report to them · All = everyone'],
   ['att', 'Attendance & reports', 'Check-ins, breaks, end-of-shift reports, internal work · Team = people who report to them'],
 ];
 

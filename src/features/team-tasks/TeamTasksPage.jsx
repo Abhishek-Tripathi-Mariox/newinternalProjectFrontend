@@ -4,7 +4,7 @@ import { useStore } from '@/store';
 import { useNow } from '@/hooks/useNow';
 import { Button, ConfirmButton, DataTable, DocumentList, FilterChips, HuePill, SearchInput, Select, Tabs, Toolbar } from '@/components/ui';
 import { fday, sod } from '@/lib/date';
-import { PRIO_HUE, STATUS_HUE, TT_STATUSES, isPreview, tabTest, teamIdsOf, viewerId, visibleTasks } from './model';
+import { PRIO_HUE, STATUS_HUE, TT_STATUSES, isPreview, tabTest, teamIdsOf, ttPerm, viewerId, visibleTasks } from './model';
 import s from './TeamTasksPage.module.css';
 
 const STATUS_OPTS = TT_STATUSES.map((x) => ({ value: x, label: x }));
@@ -49,12 +49,23 @@ export default function TeamTasksPage() {
     return d.byName || ((st.users || []).find((u) => u.id === d.by) || {}).name || 'someone else';
   };
   const team = useMemo(() => teamIdsOf(st), [st]);
+  const perm = useMemo(() => ttPerm(st), [st]);
   const tasks = useMemo(() => visibleTasks(st), [st]);
   const [tab, setTab] = useState('mine');
   const [status, setStatus] = useState('open');
   const [q, setQ] = useState('');
   const [who, setWho] = useState('');
   const [rel, setRel] = useState('');
+  // Files picked with 📎 wait here for an optional title before upload.
+  const [pending, setPending] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const uploadPending = async () => {
+    if (!pending || uploading) return;
+    setUploading(true);
+    const ok = await attachTeamTask(pending.id, pending.files, pending.title);
+    setUploading(false);
+    if (ok) { setShowFiles(pending.id); setPending(null); }
+  };
 
   const statusTest = (t) => (status === 'open' ? t.status !== 'Done' : status === 'all' ? true : t.status === status);
   const tabs = useMemo(() => [
@@ -112,6 +123,24 @@ export default function TeamTasksPage() {
               onRemove={(_, d) => removeTeamTaskDoc(t.id, d)}
             />
           )}
+          {pending && pending.id === t.id && (
+            <div className={s.attachPanel}>
+              <div className={s.attachFiles}>📎 {pending.files.map((f) => f.name).join(', ')}</div>
+              <input
+                className={s.attachTitle}
+                autoFocus
+                maxLength={200}
+                value={pending.title}
+                placeholder="Add a title (optional) — e.g. Login screen design"
+                onChange={(e) => setPending({ ...pending, title: e.target.value })}
+                onKeyDown={(e) => { if (e.key === 'Enter') uploadPending(); if (e.key === 'Escape') setPending(null); }}
+              />
+              <div className={s.attachActions}>
+                <Button size="sm" variant="primary" disabled={uploading} onClick={uploadPending}>{uploading ? 'Uploading…' : 'Upload'}</Button>
+                <Button size="sm" variant="secondary" onClick={() => setPending(null)}>Cancel</Button>
+              </div>
+            </div>
+          )}
           <ProgressNote key={`${t.id}-${t.upd}`} t={t} onSave={(v) => updateTeamTask(t.id, { upd: v })} />
         </div>
       ),
@@ -138,7 +167,7 @@ export default function TeamTasksPage() {
           {t.canStatus && (
             <label className={s.attachBtn} title="Attach files">
               📎
-              <input type="file" multiple hidden onChange={(e) => { const f = Array.from(e.target.files || []); e.target.value = ''; if (f.length) attachTeamTask(t.id, f.slice(0, 10)); }} />
+              <input type="file" multiple hidden onChange={(e) => { const f = Array.from(e.target.files || []); e.target.value = ''; if (f.length) setPending({ id: t.id, files: f.slice(0, 10), title: '' }); }} />
             </label>
           )}
           {t.canEdit && <Button size="sm" variant="secondary" onClick={() => openModal('tt', { editId: t.id })}>Edit</Button>}
@@ -161,7 +190,7 @@ export default function TeamTasksPage() {
           <h1 className={s.h1}>Team tasks</h1>
           <div className={s.sub}>Give work to people who report to you — separate from project tasks.{isPreview(st) ? ' (Preview)' : ''}</div>
         </div>
-        <Button variant="primary" onClick={() => openModal('tt', {})}>+ New task</Button>
+        {perm.c && <Button variant="primary" onClick={() => openModal('tt', {})}>+ New task</Button>}
       </div>
 
       <Tabs tabs={tabs} value={tab} onChange={setTab} />

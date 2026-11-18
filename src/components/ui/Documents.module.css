@@ -92,3 +92,11 @@
   .linkRow { grid-template-columns: 1fr 28px; }
   .linkRow > select { grid-column: 1 / -1; }
 }
+
+.docTitle { font-size: 13px; font-weight: 600; color: oklch(0.22 0.015 265); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.subName { font-size: 11.5px; color: oklch(0.42 0.012 265); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.by {
+  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 600;
+  background: oklch(0.94 0.04 265); color: oklch(0.42 0.13 265); white-space: nowrap;
+}
+.byMe { background: oklch(0.93 0.07 150); color: oklch(0.38 0.12 150); }

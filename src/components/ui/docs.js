@@ -3,7 +3,7 @@ import { dLabel } from '@/lib/date';
 
 /** Attachment meta line: size · added date · storage note. */
 export const docMeta = (a) =>
-  fileSize(a.size || 0) + (a.at ? ` · added ${dLabel(a.at)}` : '') + (a.byName ? ` by ${a.byName}` : '') + (a.url ? '' : ' · name only (too large to store)');
+  fileSize(a.size || 0) + (a.at ? ` · added ${dLabel(a.at)}` : '') + (a.url ? '' : ' · name only (too large to store)');
 
 export const docSummary = (docs = []) =>
   docs.length

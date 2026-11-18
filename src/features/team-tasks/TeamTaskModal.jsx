@@ -111,8 +111,13 @@ export default function TeamTaskModal({ editId, assignee, projectId, leadId, onC
         <Field label="Attachments">
           <FileDropzone compact hint="Screenshots, docs, sheets · up to 10 MB each" onFiles={(files) => attach(files, (atts) => setForm((f) => ({ ...f, atts: f.atts.concat(atts) })))} />
         </Field>
+        {form.atts.some((a) => a.file) && (
+          <Field label="Title for the new files (optional)">
+            <Input value={form.fileTitle || ''} maxLength={200} placeholder="e.g. Login screen design, API docs" onChange={(e) => setForm((f) => ({ ...f, fileTitle: e.target.value }))} />
+          </Field>
+        )}
         <DocumentList
-          docs={form.atts}
+          docs={form.atts.map((a) => (a.file && form.fileTitle ? { ...a, title: form.fileTitle } : a))}
           onKind={(i, kind) => setForm((f) => ({ ...f, atts: f.atts.map((x, j) => (j === i ? { ...x, kind } : x)) }))}
           onRemove={(i) => setForm((f) => ({ ...f, atts: f.atts.filter((_, j) => j !== i) }))}
         />

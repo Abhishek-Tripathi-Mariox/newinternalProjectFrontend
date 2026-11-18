@@ -10,10 +10,26 @@ export const viewerId = (state) => state.viewAs || (state.auth && state.auth.uid
 /** Super Admin previewing someone (the data is the Super Admin's, so filter it like the server would). */
 export const isPreview = (state) => !!(state.viewAs && state.auth && state.viewAs !== state.auth.uid);
 
-const isBossRole = (role) => role === 'r-super' || role === 'r-admin';
+const FULL = { v: true, c: true, e: true, d: true, scope: 'all' };
+const NO_TT = { v: false, c: false, e: false, d: false, scope: 'own' };
+
+/** Team tasks permission ({v,c,e,d,scope}) of the viewer: the previewed user's role, else the signed-in session. */
+export function ttPerm(state) {
+  if (isPreview(state)) {
+    const u = viewUser(state);
+    if (!u) return NO_TT;
+    if (u.role === 'r-super') return FULL;
+    const r = (state.roles || []).find((x) => x.id === u.role);
+    return (r && r.perms && r.perms.tt) || NO_TT;
+  }
+  const me = state.me;
+  if (!me || me.isSuper || (me.role && me.role.id === 'r-super')) return FULL;
+  return (me.role && me.role.perms && me.role.perms.tt) || NO_TT;
+}
 
 /** User ids below the viewer in "Reports to". */
 export function teamIdsOf(state) {
+  if (ttPerm(state).scope === 'own') return new Set();
   return new Set(viewReportees(state).map((r) => r.id).filter(Boolean));
 }
 
@@ -23,14 +39,16 @@ export function visibleTasks(state) {
   if (!isPreview(state)) return all;
   const u = viewUser(state);
   if (!u) return [];
-  const boss = isBossRole(u.role);
+  const perm = ttPerm(state);
+  if (!perm.v) return [];
+  const boss = perm.scope === 'all';
   const team = teamIdsOf(state);
   // The flags came from the Super Admin's session: recompute them as the previewed user (same rules as the server).
   return all
     .filter((t) => boss || t.a === u.id || t.by === u.id || team.has(t.a))
     .map((t) => {
       const manager = boss || t.by === u.id || team.has(t.a);
-      return { ...t, canEdit: manager, canDelete: manager, canStatus: manager || t.a === u.id };
+      return { ...t, canEdit: manager && perm.e, canDelete: manager && perm.d, canStatus: (manager && perm.e) || t.a === u.id };
     });
 }
 
@@ -48,6 +66,9 @@ export function tabTest(tab, me, team) {
 export function previewAssignees(state) {
   const u = viewUser(state);
   if (!u) return [];
-  if (isBossRole(u.role)) return (state.users || []).filter((x) => x.status === 'Active' && x.role !== 'r-client').map((x) => ({ id: x.id, name: x.name, self: x.id === u.id }));
+  const perm = ttPerm(state);
+  if (!perm.c) return [];
+  if (perm.scope === 'all') return (state.users || []).filter((x) => x.status === 'Active' && x.role !== 'r-client').map((x) => ({ id: x.id, name: x.name, self: x.id === u.id }));
+  if (perm.scope === 'own') return [{ id: u.id, name: u.name, self: true }];
   return [{ id: u.id, name: u.name, self: true }].concat(viewReportees(state).filter((r) => r.id).map((r) => ({ id: r.id, name: r.name, role: r.role })));
 }

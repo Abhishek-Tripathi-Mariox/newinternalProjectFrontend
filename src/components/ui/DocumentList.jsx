@@ -42,8 +42,12 @@ export function DocumentList({ docs = [], onKind, onRemove, canRemove, editable 
         <div key={a.id || `${a.name}-${a.at || i}-${i}`} className={cx(s.doc, !editable && s.readonly)}>
           <Thumb doc={a} />
           <div style={{ minWidth: 0 }}>
-            <div className={s.name} title={a.name}>{a.name}</div>
-            <div className={s.meta}>{docMeta(a)}</div>
+            {a.title && <div className={s.docTitle} title={a.title}>{a.title}</div>}
+            <div className={a.title ? s.subName : s.name} title={a.name}>{a.name}</div>
+            <div className={s.meta}>
+              {docMeta(a)}
+              {a.byName && <span className={cx(s.by, /^me\b/.test(a.byName) && s.byMe)}>by {a.byName}</span>}
+            </div>
           </div>
           {editable ? (
             <Select unstyled className={s.kind} aria-label={`Document type for ${a.name}`} value={a.kind || 'Other'} options={DOC_KINDS}

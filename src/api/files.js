@@ -17,7 +17,7 @@ const BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 /** API document DTO → store attachment. */
 export const fromApiDoc = (d) => ({
-  id: d.id, name: d.name, size: d.size, type: d.mime || '', at: ms(d.createdAt), kind: d.kind || 'Other', url: d.url,
+  id: d.id, name: d.name, title: d.title || '', size: d.size, type: d.mime || '', at: ms(d.createdAt), kind: d.kind || 'Other', url: d.url,
 });
 
 /** True when the doc's url is an authenticated API path (not a local blob/data URL). */

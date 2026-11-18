@@ -145,8 +145,14 @@ export const hasTeamView = (state) => !state.viewAs || can(state, 'att', 'v');
 
 /** May the current view open this route? (Original noAccess logic.) `tab` = pj.tab for /projects. */
 export function canAccessPath(state, path, tab = state.pj && state.pj.tab) {
-  // Team tasks: every staff account (not client portal users).
-  if (path === '/team-tasks' || path.startsWith('/team-tasks/')) return ((viewUser(state) || {}).role || '') !== 'r-client';
+  // Team tasks: the role's "Team tasks" View (never client portal users).
+  if (path === '/team-tasks' || path.startsWith('/team-tasks/')) {
+    if (((viewUser(state) || {}).role || '') === 'r-client') return false;
+    if (state.viewAs) return can(state, 'tt', 'v');
+    const me = state.me;
+    if (!me || me.isSuper || (me.role && me.role.id === 'r-super')) return true;
+    return !!(me.role && me.role.perms && me.role.perms.tt && me.role.perms.tt.v);
+  }
   const key = Object.keys(MODULE_OF_PATH).find((p) => path === p || path.startsWith(`${p}/`));
   if (!key) return true;
   const mod = key === '/projects' ? MODULE_OF_TAB[tab] || 'projects' : MODULE_OF_PATH[key];

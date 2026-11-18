@@ -27,3 +27,9 @@
   border: 1px solid var(--border-strong, #d4d4dc); background: var(--surface, #fff); font-size: 13px;
 }
 .attachBtn:hover { background: var(--hover, #f4f4f6); }
+
+.attachPanel { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding: 8px 10px; border: 1px solid oklch(0.88 0.04 265); border-radius: 9px; background: oklch(0.98 0.012 265); }
+.attachFiles { font-size: 12px; color: oklch(0.4 0.012 265); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attachTitle { font: inherit; font-size: 13px; height: 32px; padding: 0 10px; border: 1px solid var(--border-strong, #d4d4dc); border-radius: 7px; background: #fff; }
+.attachTitle:focus { outline: 2px solid oklch(0.6 0.15 265 / 0.35); border-color: oklch(0.55 0.15 265); }
+.attachActions { display: flex; gap: 6px; }

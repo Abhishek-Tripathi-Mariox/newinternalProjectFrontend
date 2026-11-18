@@ -28,7 +28,7 @@ export const createTeamTasksSlice = (set, get) => ({
       const keep = new Set((f.atts || []).filter((a) => a.id).map((a) => a.id));
       for (const d of before) if (!keep.has(d.id)) await teamTasksApi.removeDoc(d.id);
       const files = (f.atts || []).filter((a) => a.file).map((a) => a.file);
-      for (let i = 0; i < files.length; i += 10) saved = fromApiTeamTask(await teamTasksApi.upload(saved.id, files.slice(i, i + 10)));
+      for (let i = 0; i < files.length; i += 10) saved = fromApiTeamTask(await teamTasksApi.upload(saved.id, files.slice(i, i + 10), f.fileTitle || ''));
       if (before.some((d) => !keep.has(d.id)) && !files.length) saved = { ...saved, atts: saved.atts.filter((d) => keep.has(d.id)) };
     } catch (e) {
       if (saved) set((s) => ({ teamTasks: upsert(s.teamTasks, saved) }));
@@ -54,13 +54,15 @@ export const createTeamTasksSlice = (set, get) => ({
   },
 
   /** Assignee / manager adds files straight from the list. */
-  async attachTeamTask(id, files) {
+  async attachTeamTask(id, files, title = '') {
     try {
-      const res = await teamTasksApi.upload(id, files);
+      const res = await teamTasksApi.upload(id, files, title);
       set((s) => ({ teamTasks: upsert(s.teamTasks, fromApiTeamTask(res)) }));
       get().flash(`${files.length} file${files.length === 1 ? '' : 's'} attached`);
+      return true;
     } catch (e) {
       get().flash(msg(e));
+      return false;
     }
   },
 

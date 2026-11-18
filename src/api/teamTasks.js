@@ -3,7 +3,7 @@ import { fromApiDoc } from './files';
 
 /**
  * Team tasks API (/team-tasks): tasks given down the "Reports to" hierarchy, independent of projects.
- * Store shape: {id, title, notes, prio, status, due (day ms|null), p / pName (optional project),
+ * Store shape: {id, title, notes, prio, status, due (day ms|null), est (hours|null), p / pName (optional project),
  * lead / leadName (optional sales lead), a (assignee user id), aName,
  * by (creator user id), byName, upd (progress note), doneAt, at (created ms), canEdit, canDelete, canStatus}.
  */
@@ -14,6 +14,7 @@ export const fromApiTeamTask = (t) => ({
   prio: t.priority,
   status: t.status,
   due: dayMs(t.dueDate),
+  est: t.estimateHours ?? null,
   p: t.projectId || '',
   pName: t.projectName || '',
   lead: t.leadId || '',
@@ -28,7 +29,13 @@ export const fromApiTeamTask = (t) => ({
   canEdit: !!t.canEdit,
   canDelete: !!t.canDelete,
   canStatus: !!t.canUpdateStatus,
-  atts: (t.attachments || []).map((d) => ({ ...fromApiDoc(d), by: d.uploadedBy })),
+  atts: (t.attachments || []).map((d) => ({
+    ...fromApiDoc(d),
+    by: d.uploadedBy,
+    // Who added it — the assignee and the task giver are labelled.
+    byName: d.uploadedBy === t.assigneeId ? `${t.assigneeName || 'assignee'} (assignee)`
+      : d.uploadedBy === t.createdBy ? `${t.creatorName || 'task giver'} (gave the task)` : d.uploaderName || '',
+  })),
 });
 
 /** Modal form → API body. */
@@ -37,6 +44,7 @@ export const toApiTeamTask = (f) => ({
   notes: f.notes || '',
   priority: f.prio,
   dueDate: f.due || null,
+  estimateHours: f.est === '' || f.est == null ? null : +f.est,
   projectId: f.p || null,
   leadId: f.lead || null,
   assigneeId: f.a,

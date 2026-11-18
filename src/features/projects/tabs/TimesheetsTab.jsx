@@ -11,6 +11,7 @@ import { useScoped } from '@/hooks/useScoped';
 import { internalEntries } from '@/features/attendance/shared/internalWork';
 import s from './WorkTabs.module.css';
 
+const INT_HUE = 'oklch(0.72 0.14 70)';
 const VIEWS = [['entries', 'Entries'], ['matrix', 'Member × project'], ['internal', 'Internal work']];
 
 /**
@@ -43,19 +44,33 @@ export default function TimesheetsTab() {
   const mx = useMemo(() => {
     const cell = (m, p) => g(`pm:${p.id}:${m.id}`).range;
     const cols = pF.filter((p) => g(hk(p)).range > 0);
-    const mems = memF.filter((m) => cols.some((p) => cell(m, p) > 0));
+    // Internal (non-project) hours per member, from end-of-shift reports — shown as the last column.
+    const intBy = {};
+    intRows.forEach((e) => { intBy[e.who] = (intBy[e.who] || 0) + e.h; });
+    const mems = memF.filter((m) => cols.some((p) => cell(m, p) > 0) || intBy[m.id] > 0);
     let max = 0;
     mems.forEach((m) => cols.forEach((p) => { max = Math.max(max, cell(m, p)); }));
-    const rows = mems.map((m) => ({ m, total: cols.reduce((x, p) => x + cell(m, p), 0), cells: cols.map((p) => ({ p, v: cell(m, p) })) }));
+    const rows = mems.map((m) => {
+      const proj = cols.reduce((x, p) => x + cell(m, p), 0);
+      const int = intBy[m.id] || 0;
+      return { m, proj, int, total: proj + int, cells: cols.map((p) => ({ p, v: cell(m, p) })) };
+    });
     const totals = cols.map((p) => mems.reduce((x, m) => x + cell(m, p), 0));
-    return { cols, rows, totals, grand: totals.reduce((a, b) => a + b, 0), max };
-  }, [pF, memF, g, hk]);
+    const projGrand = totals.reduce((a, b) => a + b, 0);
+    const intGrand = rows.reduce((x, r) => x + r.int, 0);
+    return { cols, rows, totals, projGrand, intGrand, grand: projGrand + intGrand, max };
+  }, [pF, memF, g, hk, intRows]);
 
   const openP = (id) => setPj({ selP: id, selM: null, exp: null, exp2: null, pDay: null });
   const openM = (id) => setPj({ selM: id, selP: null, mDay: null, exp: null, exp2: null });
   const drill = (mid, pid) => {
     const cur = useStore.getState().pj;
     setPj({ tsView: 'entries', f: { ...cur.f, member: mid, project: pid } });
+  };
+
+  const drillInt = (mid) => {
+    const cur = useStore.getState().pj;
+    setPj({ tsView: 'internal', f: { ...cur.f, member: mid } });
   };
 
   const exportCsv = async () => {
@@ -117,7 +132,10 @@ export default function TimesheetsTab() {
             <div className={s.summary}><span className={s.strong}>{hh(intTotal)}</span> internal · {intRows.length} entries · {periodLabel.toLowerCase()}</div>
           ) : (
             <>
-              <div className={s.summary}><span className={s.strong}>{hh(total)}</span> · {ents.length} entries · {periodLabel.toLowerCase()}</div>
+              <div className={s.summary}>
+                <span className={s.strong}>{hh(total)}</span> · {ents.length} entries
+                {view === 'matrix' && intTotal > 0 && <> · <span className={s.strong}>{hh(intTotal)}</span> internal</>} · {periodLabel.toLowerCase()}
+              </div>
               <Button variant="secondary" onClick={exportCsv}>Export timesheet CSV</Button>
             </>
           )}
@@ -146,7 +164,10 @@ export default function TimesheetsTab() {
                       <div className={s.mxThInner}><span className={s.sq} style={{ background: projectColor(p) }} /><span className={s.nowrap}>{p.name}</span></div>
                     </th>
                   ))}
-                  <th className={s.right}>Total</th>
+                  <th className={`${s.mxTh} ${s.right}`} title="Internal (non-project) work from end-of-shift reports">
+                    <div className={s.mxThInner} style={{ justifyContent: 'flex-end' }}><span className={s.sq} style={{ background: INT_HUE }} /><span className={s.nowrap}>Internal work</span></div>
+                  </th>
+                  <th className={s.right} title="Project hours + internal work">Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -177,13 +198,29 @@ export default function TimesheetsTab() {
                           </td>
                         );
                       })}
-                      <td className={`${s.right} ${s.b600}`} style={{ padding: '8px 14px' }}>{hh(r.total)}</td>
+                      <td className={s.mxTd}>
+                        <button
+                          type="button"
+                          className={s.mxCell}
+                          title={`${r.m.name} · internal work: ${hh(r.int)}`}
+                          onClick={() => drillInt(r.m.id)}
+                          style={{
+                            fontWeight: r.int ? 600 : 400,
+                            background: r.int ? 'oklch(0.75 0.13 70 / 0.22)' : 'transparent',
+                            color: r.int ? INK : 'oklch(0.75 0.01 265)',
+                          }}
+                        >
+                          {r.int ? hh(r.int) : '·'}
+                        </button>
+                      </td>
+                      <td className={`${s.right} ${s.b600}`} style={{ padding: '8px 14px' }} title={`Projects ${hh(r.proj)} + internal ${hh(r.int)}`}>{hh(r.total)}</td>
                     </tr>
                   );
                 })}
                 <tr className={s.totalRow}>
                   <td className={s.stickyHead}>Total</td>
                   {mx.totals.map((t, i) => <td key={mx.cols[i].id}>{hh(t)}</td>)}
+                  <td>{hh(mx.intGrand)}</td>
                   <td style={{ fontWeight: 700 }}>{hh(mx.grand)}</td>
                 </tr>
               </tbody>
@@ -192,7 +229,7 @@ export default function TimesheetsTab() {
             {mx.rows.length === 0 && <div className={s.empty}>No hours logged for these filters.</div>}
             <Pagination {...mxPager} label="members" />
           </div>
-          <div className={s.hint}>Click any cell to see the entries behind it.</div>
+          <div className={s.hint}>Click any cell to see the entries behind it. Internal work comes from end-of-shift reports; Total = project hours + internal work.</div>
         </>
       )}
     </div>

@@ -36,11 +36,18 @@ export default function TeamTasksPage() {
   const updateTeamTask = useStore((x) => x.updateTeamTask);
   const delTeamTask = useStore((x) => x.delTeamTask);
   const attachTeamTask = useStore((x) => x.attachTeamTask);
+  const removeTeamTaskDoc = useStore((x) => x.removeTeamTaskDoc);
   const [showFiles, setShowFiles] = useState(null);
   const setPj = useStore((x) => x.setPj);
   const selectLead = useStore((x) => x.selectLead);
 
   const me = viewerId(st);
+  // Who added a file: "Me", the assignee (labelled), the person who gave the task, or anyone else by name.
+  const uploader = (t, d) => {
+    if (!d.by) return d.byName || '';
+    if (d.by === me) return t.a === me ? 'me (assignee)' : 'me';
+    return d.byName || ((st.users || []).find((u) => u.id === d.by) || {}).name || 'someone else';
+  };
   const team = useMemo(() => teamIdsOf(st), [st]);
   const tasks = useMemo(() => visibleTasks(st), [st]);
   const [tab, setTab] = useState('mine');
@@ -97,7 +104,14 @@ export default function TeamTasksPage() {
               📎 {t.atts.length} file{t.atts.length === 1 ? '' : 's'} {showFiles === t.id ? '▴' : '▾'}
             </button>
           )}
-          {showFiles === t.id && <DocumentList docs={t.atts} editable={false} />}
+          {showFiles === t.id && (
+            <DocumentList
+              docs={t.atts.map((d) => ({ ...d, byName: uploader(t, d) }))}
+              editable={false}
+              canRemove={(d) => t.canEdit || (t.canStatus && d.by === me)}
+              onRemove={(_, d) => removeTeamTaskDoc(t.id, d)}
+            />
+          )}
           <ProgressNote key={`${t.id}-${t.upd}`} t={t} onSave={(v) => updateTeamTask(t.id, { upd: v })} />
         </div>
       ),
@@ -111,6 +125,7 @@ export default function TeamTasksPage() {
         return <span className={s.nowrap} style={late ? { color: 'var(--red, oklch(0.55 0.2 25))', fontWeight: 600 } : undefined}>{fday(t.due)}{late ? ' · overdue' : t.due === T ? ' · today' : ''}</span>;
       },
     },
+    { key: 'est', label: 'Estimate', align: 'right', render: (t) => (t.est ? <span className={s.nowrap}>{t.est}h</span> : <span className={s.muted}>—</span>) },
     { key: 'prio', label: 'Priority', render: (t) => <HuePill hue={PRIO_HUE[t.prio]} size="sm">{t.prio}</HuePill> },
     {
       key: 'status', label: 'Status', render: (t) => (t.canStatus
@@ -120,7 +135,7 @@ export default function TeamTasksPage() {
     {
       key: 'act', label: '', align: 'right', render: (t) => (
         <div className={s.actions}>
-          {t.canEdit && (
+          {t.canStatus && (
             <label className={s.attachBtn} title="Attach files">
               📎
               <input type="file" multiple hidden onChange={(e) => { const f = Array.from(e.target.files || []); e.target.value = ''; if (f.length) attachTeamTask(t.id, f.slice(0, 10)); }} />

@@ -64,6 +64,17 @@ export const createTeamTasksSlice = (set, get) => ({
     }
   },
 
+  /** Remove one file from a task (managers: any file; the assignee: files they added). */
+  async removeTeamTaskDoc(id, doc) {
+    try {
+      await teamTasksApi.removeDoc(doc.id);
+      set((s) => ({ teamTasks: (s.teamTasks || []).map((x) => (x.id === id ? { ...x, atts: x.atts.filter((d) => d.id !== doc.id) } : x)) }));
+      get().flash(`${doc.name} removed`);
+    } catch (e) {
+      get().flash(msg(e));
+    }
+  },
+
   async delTeamTask(id) {
     const ok = await optimistic(set, get, (s) => ({ teamTasks: (s.teamTasks || []).filter((x) => x.id !== id) }), () => teamTasksApi.remove(id).then(() => true));
     if (ok) get().flash('Task deleted');

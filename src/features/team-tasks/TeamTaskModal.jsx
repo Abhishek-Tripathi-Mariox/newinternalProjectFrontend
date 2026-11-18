@@ -24,8 +24,8 @@ export default function TeamTaskModal({ editId, assignee, projectId, leadId, onC
 
   const [people, setPeople] = useState(() => (preview ? previewAssignees(st) : null));
   const [form, setForm] = useState(() => (editing
-    ? { title: editing.title, notes: editing.notes, prio: editing.prio, due: editing.due ? ymd(editing.due) : '', a: editing.a, status: editing.status, p: editing.p, lead: editing.lead, atts: editing.atts || [] }
-    : { title: '', notes: '', prio: 'Medium', due: '', a: assignee || '', status: '', p: projectId || '', lead: leadId || '', atts: [] }));
+    ? { title: editing.title, notes: editing.notes, prio: editing.prio, due: editing.due ? ymd(editing.due) : '', est: editing.est != null ? String(editing.est) : '', a: editing.a, status: editing.status, p: editing.p, lead: editing.lead, atts: editing.atts || [] }
+    : { title: '', notes: '', prio: 'Medium', due: '', est: '', a: assignee || '', status: '', p: projectId || '', lead: leadId || '', atts: [] }));
   const attach = useAttach();
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -68,6 +68,7 @@ export default function TeamTaskModal({ editId, assignee, projectId, leadId, onC
     if (busy) return;
     if (!form.title.trim()) return setErr('Add a title.');
     if (!form.a) return setErr('Pick who this task is for.');
+    if (form.est !== '' && !(+form.est >= 0 && +form.est <= 1000)) return setErr('Estimated time should be between 0 and 1000 hours.');
     setBusy(true);
     const e = await saveTeamTask(form, editId || undefined);
     setBusy(false);
@@ -101,8 +102,9 @@ export default function TeamTaskModal({ editId, assignee, projectId, leadId, onC
           <Select {...bind('a')} options={opts} />
         </Field>
         {onlySelf && <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: -8 }}>Nobody reports to you yet, so you can only add tasks for yourself. Set &quot;Reports to&quot; on a user in Users &amp; roles to give them tasks.</div>}
-        <div style={{ display: 'grid', gridTemplateColumns: editing ? '1fr 1fr 1fr' : '1fr 1fr', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: editing ? '1fr 1fr 1fr 1fr' : '1fr 1fr 1fr', gap: 12 }}>
           <Field label="Due date"><Input type="date" {...bind('due')} /></Field>
+          <Field label="Estimated time (hours)"><Input type="number" min="0" max="1000" step="0.5" placeholder="e.g. 4" {...bind('est')} /></Field>
           <Field label="Priority"><Select {...bind('prio')} options={PRIO_OPTS} /></Field>
           {editing && <Field label="Status"><Select {...bind('status')} options={STATUS_OPTS} /></Field>}
         </div>

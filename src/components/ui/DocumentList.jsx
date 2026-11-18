@@ -27,9 +27,9 @@ function Thumb({ doc }) {
  * Attachment rows: image thumbnail or extension badge, name + size/date meta, document-kind
  * select (editable) or pill (read-only), Download link when stored, ✕ remove.
  * Downloads of stored (API) files are fetched with the session's token.
- * onKind(i, kind, doc) · onRemove(i, doc)
+ * onKind(i, kind, doc) · onRemove(i, doc) · canRemove(doc) → show ✕ on a read-only list (e.g. own uploads)
  */
-export function DocumentList({ docs = [], onKind, onRemove, editable = true, className, style }) {
+export function DocumentList({ docs = [], onKind, onRemove, canRemove, editable = true, className, style }) {
   const flash = useStore((st) => st.flash);
   if (!docs.length) return null;
   const dl = async (e, a) => {
@@ -56,7 +56,7 @@ export function DocumentList({ docs = [], onKind, onRemove, editable = true, cla
           ) : (
             <span />
           )}
-          {editable && (
+          {(editable || canRemove?.(a)) && (
             <button type="button" className={s.remove} title="Remove" aria-label={`Remove ${a.name}`} onClick={() => onRemove?.(i, a)}>
               ✕
             </button>

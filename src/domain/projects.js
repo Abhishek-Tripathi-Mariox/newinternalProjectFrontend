@@ -5,6 +5,13 @@ import { escapeHtml as esc, printHtml } from '@/lib/download';
 import { hh, inr } from '@/lib/format';
 import { serverNow } from '@/lib/clock';
 
+/** "3d after due" / "2d before due" / "on the due date" — expected delivery vs. the due date. */
+export function expVsDue(exp, due) {
+  if (!exp || !due) return '';
+  const n = Math.round((exp - due) / DAY);
+  return n === 0 ? 'on the due date' : n > 0 ? `${n}d after due` : `${-n}d before due`;
+}
+
 /** Start ("onboarded") / due date filter presets → [from, to) ms, or null for any. `T` = start of today. */
 export const PROJECT_START_PRESETS = [['', 'Onboarded: any time'], ['thisMonth', 'Onboarded this month'], ['lastMonth', 'Onboarded last month'],
   ['last90', 'Onboarded in last 3 months'], ['thisYear', 'Onboarded this year'], ['custom', 'Onboarded between…']];
@@ -233,6 +240,9 @@ export function buildProjectsModel(S, pj, now = serverNow()) {
       hLabel: sc == null ? hl[0] : `${hl[0]} · ${sc}`, hBg: `oklch(0.95 0.04 ${hl[1]})`, hFg: `oklch(0.45 0.14 ${hl[1]})`, bad: hl[1] === 25 || hl[1] === 70,
       dueLabel: fd(p.due), dueSub: p.status === 'Completed' ? 'Delivered' : dd < 0 ? `${Math.abs(dd)}d overdue` : dd === 0 ? 'Due today' : `in ${dd}d`,
       dueColor: p.status !== 'Completed' && dd < 0 ? RED : INK,
+      // Expected delivery (team's current estimate) vs. the contracted due date.
+      expLabel: p.exp ? fd(p.exp) : '', expSub: p.exp ? expVsDue(p.exp, p.due) : '',
+      expColor: p.exp && p.due && p.exp > p.due ? RED : INK,
     };
   };
 

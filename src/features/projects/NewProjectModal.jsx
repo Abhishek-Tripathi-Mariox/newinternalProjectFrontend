@@ -41,6 +41,7 @@ function initialForm(members) {
     pm: members.some((m) => m.id === DEFAULT_PM) ? DEFAULT_PM : (members[0] || {}).id || '',
     start: ymd(T),
     due: ymd(T + 60 * DAY),
+    exp: '',
     budget: '',
     team: [],
     primary: [],
@@ -73,6 +74,7 @@ function editForm(p, milestones) {
     pm: p.pm || '',
     start: p.start ? ymd(p.start) : '',
     due: p.due ? ymd(p.due) : '',
+    exp: p.exp ? ymd(p.exp) : '',
     value: p.value ? String(p.value) : '',
     prio: p.prio || 'Medium',
     brief: p.brief || '',
@@ -292,6 +294,9 @@ export default function NewProjectModal({ editId, onClose }) {
         </Field>
         <Field label="Due date">
           <Input type="date" value={form.due} onChange={setDate('due')} />
+        </Field>
+        <Field label="Expected delivery date" hint="When the team now expects to deliver · optional">
+          <Input type="date" value={form.exp} min={form.start || undefined} onChange={set('exp')} />
         </Field>
         <Field
           as="div"

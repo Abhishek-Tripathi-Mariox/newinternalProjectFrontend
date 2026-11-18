@@ -105,6 +105,15 @@ export default function ProjectDrawer() {
           <Fact label="Due">
             <span style={{ color: I.dueColor }}>{I.dueLabel}</span> <span className={s.factSub}>· {I.dueSub}</span>
           </Fact>
+          <Fact label="Expected delivery">
+            {I.expLabel ? (
+              <>
+                <span style={{ color: I.expColor }}>{I.expLabel}</span> <span className={s.factSub}>· {I.expSub}</span>
+              </>
+            ) : (
+              <span className={s.factSub}>Not set</span>
+            )}
+          </Fact>
           <Fact label="Contract value">{sp.value ? money(sp.value) : '—'}</Fact>
           <Fact label="Health">
             <HealthPill bg={I.hBg} fg={I.hFg}>

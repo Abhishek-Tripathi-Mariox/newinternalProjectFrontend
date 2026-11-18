@@ -32,7 +32,7 @@ export function fromApiProject(p, prev) {
   return {
     id: p.id, primary, name: p.name, client: p.client, clientEmail: p.clientEmail || '',
     statusReason: p.statusReason || '', statusNote: p.statusNote || '', statusNoteAt: p.statusNoteAt ? ms(p.statusNoteAt) : null, service: (p.services || []).join(', '), status: p.status, pm: p.pmId, team,
-    start: dayMs(p.startDate), due: dayMs(p.dueDate), budgetHours: p.budgetLimit ?? null, value: p.value || 0, h: p.hue, prio: p.priority || 'Medium', alloc,
+    start: dayMs(p.startDate), due: dayMs(p.dueDate), exp: p.expectedDate ? dayMs(p.expectedDate) : null, budgetHours: p.budgetLimit ?? null, value: p.value || 0, h: p.hue, prio: p.priority || 'Medium', alloc,
     brief: p.brief || '', links: (p.links || []).map((l) => ({ type: l.type, url: l.url })), docs,
     portal: p.portal ? { on: !!p.portal.on, ...(p.portal.token ? { token: p.portal.token } : {}) } : { on: false },
   };
@@ -91,6 +91,7 @@ export function toApiProjectPatch(patch) {
   if (patch.service !== undefined) b.services = String(patch.service).split(',').map((x) => x.trim()).filter(Boolean);
   if (patch.start !== undefined) b.startDate = toDay(patch.start);
   if (patch.due !== undefined) b.dueDate = toDay(patch.due);
+  if (patch.exp !== undefined) b.expectedDate = patch.exp ? toDay(patch.exp) : '';
   return b;
 }
 
@@ -101,7 +102,7 @@ export const msTeamBody = (r) => (r.team || []).map((id) => ({ memberId: id, hou
 export const toApiProject = (m) => ({
   name: m.name || '', client: m.client || '', clientEmail: (m.clientEmail || '').trim(),
   statusReason: m.statusReason || '', statusNote: (m.statusNote || '').trim(), services: String(m.service || '').split(',').map((x) => x.trim()).filter(Boolean),
-  status: m.status, pmId: m.pm || undefined, startDate: m.start || '', dueDate: m.due || '',
+  status: m.status, pmId: m.pm || undefined, startDate: m.start || '', dueDate: m.due || '', expectedDate: m.exp || '',
   ...(Array.isArray(m.ms) && m.ms.length
     ? { milestones: m.ms.map((r) => ({ name: (r.name || '').trim(), dueDate: r.due, allocHours: Math.max(0, +r.hours || 0), team: msTeamBody(r) })), budgetHours: +m.budget || 0 }
     : { budgetHours: +m.budget || 0 }),

@@ -76,6 +76,7 @@ export const createDeliverySlice = (set, get) => {
       if (!String(m.service || '').trim()) return 'Pick at least one service.';
       if (!m.start || !m.due) return 'Pick a start date and a due date.';
       if (m.due < m.start) return 'The due date must be on or after the start date.';
+      if (m.exp && m.exp < m.start) return 'The expected delivery date can’t be before the start date.';
       const next = { ...m, value: +m.value || 0 };
       const patch = {};
       if (m.clientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.clientEmail.trim())) return 'Enter a valid client email.';
@@ -86,6 +87,7 @@ export const createDeliverySlice = (set, get) => {
       });
       if (m.start !== toDay(p.start)) patch.start = m.start;
       if (m.due !== toDay(p.due)) patch.due = m.due;
+      if ((m.exp || '') !== (p.exp ? toDay(p.exp) : '')) patch.exp = m.exp || '';
       // Budget: '' = no budget (no limit) → null.
       const oldBudget = p.budgetHours != null ? +p.budgetHours : null;
       const newBudget = m.budget === undefined ? oldBudget : String(m.budget).trim() === '' ? null : Math.max(0, +m.budget || 0);
@@ -141,6 +143,7 @@ export const createDeliverySlice = (set, get) => {
         const body = toApiProjectPatch(patch);
         if (patch.start) body.startDate = patch.start;
         if (patch.due) body.dueDate = patch.due;
+        if (patch.exp !== undefined) body.expectedDate = patch.exp || '';
         mergeProject(await api.patch(`/projects/${id}`, body));
       };
       // Raising the budget goes first (so bigger milestones fit); lowering it goes after the milestones shrink.
@@ -184,6 +187,7 @@ export const createDeliverySlice = (set, get) => {
       if (noDate >= 0) return `Pick a due date for milestone ${noDate + 1}.`;
       const early = (m.ms || []).findIndex((r) => m.start && r.due < m.start);
       if (early >= 0) return `Milestone ${early + 1} is due before the project starts.`;
+      if (m.exp && m.start && m.exp < m.start) return 'The expected delivery date can’t be before the start date.';
       let dto;
       try {
         dto = await api.post('/projects', toApiProject(m));

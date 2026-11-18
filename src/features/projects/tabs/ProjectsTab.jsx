@@ -110,6 +110,16 @@ function tableColumns(periodLabel, openMember) {
       ),
     },
     {
+      key: 'exp',
+      label: 'Expected delivery',
+      render: ({ I }) => (I.expLabel ? (
+        <div className={s.nowrap}>
+          <div className={s.dueLabel} style={{ color: I.expColor }}>{I.expLabel}</div>
+          <div className={s.cellSub}>{I.expSub}</div>
+        </div>
+      ) : <span className={s.cellSub}>—</span>),
+    },
+    {
       key: 'open',
       label: 'Open',
       align: 'right',
@@ -226,7 +236,7 @@ export default function ProjectsTab() {
           rowKey={(r) => r.id}
           onRowClick={(r) => openProject(r.id)}
           empty="No projects match these filters."
-          minWidth={1500}
+          minWidth={1600}
         />
       )}
     </div>

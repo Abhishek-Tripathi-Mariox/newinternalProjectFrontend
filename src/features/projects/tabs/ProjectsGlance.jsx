@@ -109,6 +109,14 @@ export default function ProjectsGlance({ model, tasks, bugs, openProject, openMe
       ),
     },
     {
+      key: 'exp', label: 'Expected delivery', render: ({ I }) => (I.expLabel ? (
+        <div className={s.nowrap}>
+          <div style={{ color: I.expColor, fontWeight: 600 }}>{I.expLabel}</div>
+          <div className={s.sub}>{I.expSub}</div>
+        </div>
+      ) : <span className={s.sub}>—</span>),
+    },
+    {
       key: 'work', label: 'Open', align: 'right', render: ({ openT, openB }) => (
         <div className={s.nowrap} style={{ textAlign: 'right' }}>
           <div>{openT} task{openT === 1 ? '' : 's'}</div>
@@ -141,7 +149,7 @@ export default function ProjectsGlance({ model, tasks, bugs, openProject, openMe
         itemLabel="projects"
         columns={columns.map((c) => ({ ...c, tdStyle: { verticalAlign: 'top' } }))}
         rows={rows}
-        minWidth={1180}
+        minWidth={1300}
         onRowClick={(r) => openProject(r.id)}
         resetKey={view}
         empty="No projects match these filters."

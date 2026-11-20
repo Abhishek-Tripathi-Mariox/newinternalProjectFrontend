@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { DataTable, FilterChips, KanbanBoard, Pill, SegmentedControl } from '@/components/ui';
 import { useStore } from '@/store';
 import { useScoped } from '@/hooks/useScoped';
@@ -7,6 +7,7 @@ import { avatarOf } from '@/domain/projects';
 import { tone } from '@/lib/color';
 import { hh } from '@/lib/format';
 import { fd } from '@/lib/date';
+import { nextSort, sortProjectRows, SORTABLE } from '../lib/projectSort';
 import { PRIORITIES, PROJECT_STATUS } from '@/config/constants';
 import ProjectCard from '../components/ProjectCard';
 import { HealthPill, Meter, ProjectName, UsedOf } from '../components/bits';
@@ -212,7 +213,9 @@ export default function ProjectsTab() {
     [PRJ, updProj, flash, openModal],
   );
 
-  const tableCols = useMemo(() => topAligned(tableColumns(periodLabel, openMember)), [periodLabel, openMember]);
+  const [sort, setSort] = useState(null);
+  const sortedRows = useMemo(() => sortProjectRows(rows, sort), [rows, sort]);
+  const tableCols = useMemo(() => topAligned(tableColumns(periodLabel, openMember)).map((c) => (SORTABLE.includes(c.key) ? { ...c, sortable: true } : c)), [periodLabel, openMember]);
 
   return (
     <div className={s.stack}>
@@ -232,7 +235,9 @@ export default function ProjectsTab() {
       ) : (
         <DataTable itemLabel="projects"
           columns={tableCols}
-          rows={rows}
+          rows={sortedRows}
+          sort={sort}
+          onSort={(k) => setSort((x) => nextSort(x, k))}
           rowKey={(r) => r.id}
           onRowClick={(r) => openProject(r.id)}
           empty="No projects match these filters."

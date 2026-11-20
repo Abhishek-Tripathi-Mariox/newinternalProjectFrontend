@@ -23,3 +23,9 @@
 .bar { height: 5px; border-radius: 3px; background: var(--divider, oklch(0.93 0.005 265)); overflow: hidden; }
 .bar span { display: block; height: 100%; border-radius: 3px; }
 .bugs { color: oklch(0.52 0.18 25); font-weight: 600; }
+
+.ink { color: oklch(0.25 0.015 265); }
+.split { margin-top: 4px; padding-top: 5px; border-top: 1px dashed oklch(0.9 0.006 265); display: flex; flex-direction: column; gap: 2px; max-width: 220px; }
+.splitRow { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; color: oklch(0.42 0.012 265); }
+.splitName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.splitH { font-weight: 600; color: oklch(0.3 0.015 265); }

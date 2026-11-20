@@ -7,6 +7,7 @@ import { DEFAULT_PROJECT_FILTER, STATUS_KEYS, val } from './lib/view';
 import { PROJECT_DUE_PRESETS, PROJECT_START_PRESETS } from '@/domain/projects';
 import s from './ProjectsPage.module.css';
 
+const ROLE_OPTS = [{ value: '', label: 'Any role' }, { value: 'primary', label: '★ Primary developer' }, { value: 'pm', label: 'Project manager' }, { value: 'other', label: 'Other team member' }];
 const withAll = (label, list) => [{ value: '', label }, ...list];
 
 /** Shared filter bar above every Projects tab (search, period, status, team, member, project). */
@@ -30,7 +31,7 @@ function ProjectFilters() {
   );
 
   const set = (k) => (e) => setPjF({ [k]: val(e) });
-  const nAct = ['q', 'status', 'team', 'member', 'project', 'start', 'due'].filter((k) => f[k]).length + (f.date !== 'week' ? 1 : 0);
+  const nAct = ['q', 'status', 'team', 'member', 'role', 'project', 'start', 'due'].filter((k) => (k === 'role' ? f.member && f.role : f[k])).length + (f.date !== 'week' ? 1 : 0);
 
   return (
     <Toolbar>
@@ -45,6 +46,15 @@ function ProjectFilters() {
       <Select compact inline value={f.status} onChange={set('status')} options={opts.status} />
       <Select compact inline value={f.team} onChange={set('team')} options={opts.team} />
       <Select compact inline value={f.member} onChange={set('member')} options={opts.member} />
+      <Select
+        compact inline
+        value={f.role || ''}
+        onChange={set('role')}
+        aria-label="Member's role on the project"
+        title={f.member ? 'Their role on the project' : 'Pick a member first'}
+        disabled={!f.member}
+        options={ROLE_OPTS}
+      />
       <Select compact inline value={f.project} onChange={set('project')} options={opts.project} />
       <Select compact inline value={f.start || ''} onChange={set('start')} title="When the project started (onboarded)" aria-label="Onboarded" options={opts.start} />
       {f.start === 'custom' && (

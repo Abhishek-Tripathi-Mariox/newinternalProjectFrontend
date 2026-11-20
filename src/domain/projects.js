@@ -177,7 +177,9 @@ export function buildProjectsModel(S, pj, now = serverNow()) {
   const inRg = (t, rg) => !rg || (t != null && t >= rg[0] && t < rg[1]);
   const pBase = S.projects.filter((p) => (!q || `${p.name} ${p.client} ${p.id} ${p.team.map((id) => (MEM[id] || {}).name).join(' ')}`.toLowerCase().includes(q))
     && (!f.project || p.id === f.project)
-    && (!f.member || p.team.includes(f.member))
+    && (!f.member || p.team.includes(f.member) || p.pm === f.member)
+    // Role of the picked member on the project: primary developer / PM / any other team member.
+    && (!f.member || !f.role || (f.role === 'primary' ? (p.primary || []).includes(f.member) : f.role === 'pm' ? p.pm === f.member : !(p.primary || []).includes(f.member) && p.pm !== f.member))
     && (!f.team || p.team.some((id) => (MEM[id] || {}).team === f.team))
     && inRg(p.start, startRg)
     && (f.due === 'overdue' ? (p.due != null && p.due < T && !['Completed', 'Cancelled'].includes(p.status)) : inRg(p.due, dueRg)));

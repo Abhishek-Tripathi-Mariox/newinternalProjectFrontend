@@ -12,7 +12,7 @@ export const LINK_RE = /^https?:\/\//i;
 export const NEUTRAL_DOT = 'oklch(0.7 0.01 265)';
 /** Shared Projects filter defaults (pj.f) — "Clear filters" resets to this. */
 export const DEFAULT_PROJECT_FILTER = {
-  q: '', date: 'week', from: '', to: '', status: '', team: '', member: '', project: '',
+  q: '', date: 'week', from: '', to: '', status: '', team: '', member: '', role: '', project: '',
   start: '', startFrom: '', startTo: '', due: '', dueFrom: '', dueTo: '',
 };
 export const PORTAL_HOST = 'clients.marioxsoftware.com/p/';

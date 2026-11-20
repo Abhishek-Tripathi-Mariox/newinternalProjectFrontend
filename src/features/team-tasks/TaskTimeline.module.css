@@ -1,0 +1,24 @@
+.wrap { margin-top: 8px; padding: 10px 12px; border: 1px solid oklch(0.91 0.008 265); border-radius: 10px; background: oklch(0.985 0.004 265); display: flex; flex-direction: column; gap: 10px; }
+.muted { font-size: 12px; color: var(--muted); }
+.list { list-style: none; margin: 0; padding: 0 0 0 4px; display: flex; flex-direction: column; gap: 0; }
+.item { position: relative; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; padding-bottom: 10px; }
+.item:not(:last-child)::before { content: ''; position: absolute; left: 10px; top: 22px; bottom: 0; width: 1px; background: oklch(0.88 0.01 265); }
+.dot {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px;
+  background: oklch(0.94 0.03 265); color: oklch(0.42 0.13 265); border: 1px solid oklch(0.88 0.04 265);
+}
+.status .dot { background: oklch(0.94 0.05 150); color: oklch(0.42 0.13 150); border-color: oklch(0.86 0.06 150); }
+.reopened .dot { background: oklch(0.95 0.05 25); color: oklch(0.5 0.17 25); border-color: oklch(0.86 0.08 25); }
+.comment .dot { background: oklch(0.95 0.05 70); color: oklch(0.45 0.12 70); border-color: oklch(0.87 0.07 70); }
+.attach .dot, .detach .dot { background: oklch(0.95 0.03 300); color: oklch(0.45 0.13 300); border-color: oklch(0.88 0.05 300); }
+.body { min-width: 0; }
+.line { font-size: 12.5px; color: oklch(0.3 0.015 265); line-height: 1.5; }
+.who { font-weight: 600; }
+.when { margin-left: 8px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.text { margin-top: 3px; font-size: 12.5px; color: oklch(0.25 0.015 265); background: #fff; border: 1px solid oklch(0.92 0.006 265); border-radius: 8px; padding: 6px 9px; white-space: pre-wrap; word-break: break-word; }
+.reopened .text { border-color: oklch(0.86 0.08 25); background: oklch(0.985 0.012 25); }
+.changes { margin: 3px 0 0; padding-left: 16px; font-size: 12px; color: oklch(0.4 0.012 265); }
+.changes s { color: oklch(0.6 0.01 265); }
+.compose { display: flex; gap: 6px; }
+.input { flex: 1; min-width: 0; font: inherit; font-size: 13px; height: 32px; padding: 0 10px; border: 1px solid var(--border-strong, #d4d4dc); border-radius: 7px; background: #fff; }
+.input:focus { outline: 2px solid oklch(0.6 0.15 265 / 0.35); border-color: oklch(0.55 0.15 265); }

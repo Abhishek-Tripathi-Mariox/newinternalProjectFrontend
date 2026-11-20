@@ -1,7 +1,9 @@
 import { viewReportees, viewUser } from '@/domain/permissions';
 
-export const TT_STATUSES = ['To do', 'In progress', 'Done'];
-export const STATUS_HUE = { 'To do': 265, 'In progress': 70, Done: 150 };
+export const TT_STATUSES = ['To do', 'In progress', 'Reopened', 'Done'];
+export const STATUS_HUE = { 'To do': 265, 'In progress': 70, Reopened: 25, Done: 150 };
+/** Status choices from the current one: "Reopened" only from Done (or to stay Reopened). */
+export const statusChoices = (cur) => TT_STATUSES.filter((x) => x !== 'Reopened' || cur === 'Done' || cur === 'Reopened').map((x) => ({ value: x, label: x }));
 export const PRIO_HUE = { High: 25, Medium: 70, Low: 220 };
 
 /** The user whose tasks we show: the previewed user, else the signed-in user. */

@@ -2,30 +2,57 @@ import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '@/store';
 import { useNow } from '@/hooks/useNow';
-import { Button, ConfirmButton, DataTable, DocumentList, FilterChips, HuePill, SearchInput, Select, Tabs, Toolbar } from '@/components/ui';
+import { Avatar, Button, DataTable, FilterChips, HuePill, KanbanBoard, KanbanCard, SearchInput, SegmentedControl, Select, Tabs, Toolbar } from '@/components/ui';
 import { fday, sod } from '@/lib/date';
 import { PRIO_HUE, STATUS_HUE, TT_STATUSES, isPreview, tabTest, teamIdsOf, ttPerm, viewerId, visibleTasks } from './model';
+import TaskDrawer from './TaskDrawer';
 import s from './TeamTasksPage.module.css';
 
-const STATUS_OPTS = TT_STATUSES.map((x) => ({ value: x, label: x }));
+const VIEWS = [['list', 'List'], ['board', 'Board']];
+const VIEW_KEY = 'mx.teamTasks.view';
+const readView = () => { try { return localStorage.getItem(VIEW_KEY) === 'board' ? 'board' : 'list'; } catch { return 'list'; } };
 const REL_OPTS = [{ value: '', label: 'Any link' }, { value: 'project', label: 'Project tasks' }, { value: 'lead', label: 'Lead tasks' }, { value: 'none', label: 'General' }];
 
-/** Progress note editor for the assignee (saved on blur). */
-function ProgressNote({ t, onSave }) {
-  const [v, setV] = useState(t.upd);
-  if (!t.canStatus) return t.upd ? <div className={s.upd}>↳ {t.upd}</div> : null;
+/** One board card: title, links, due / estimate / priority, assignee, files and comments. */
+function BoardCard({ t, me, T, onOpen }) {
+  const late = t.due && t.status !== 'Done' && t.due < T;
   return (
-    <input
-      className={s.updInput}
-      value={v}
-      placeholder="Add a progress note…"
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => { if (v !== t.upd) onSave(v); }}
-      onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-      aria-label={`Progress note for ${t.title}`}
-    />
+    <KanbanCard onClick={onOpen} className={s.card}>
+      <div className={s.cardTop}>
+        <span className={s.cardId}>{t.id}</span>
+        <HuePill hue={PRIO_HUE[t.prio]} size="sm">{t.prio}</HuePill>
+      </div>
+      <div className={`${s.cardTitle} ${t.status === 'Done' ? s.titleDone : ''}`}>{t.title}</div>
+      {(t.p || t.lead) && (
+        <div className={s.cardLinks}>
+          {t.p && <span className={s.linkChip}>▣ {t.pName || t.p}</span>}
+          {t.lead && <span className={s.linkChipLead}>◆ {t.leadName || t.lead}</span>}
+        </div>
+      )}
+      {t.upd && <div className={s.cardUpd}>↳ {t.upd}</div>}
+      <div className={s.cardFoot}>
+        <span className={s.person} title={`Assigned to ${t.aName}${t.byName ? ` · given by ${t.byName}` : ''}`}>
+          <Avatar name={t.aName || '—'} size={20} />
+          <span className={s.cardWho}>{t.a === me ? 'Me' : t.aName}</span>
+        </span>
+        <span className={s.cardMeta}>
+          {t.due ? <span className={late ? s.late : undefined}>{late ? '⚠ ' : ''}{fday(t.due)}</span> : null}
+          {t.est ? <span>{t.est}h</span> : null}
+          {t.atts.length > 0 && <span>📎 {t.atts.length}</span>}
+          {t.comments > 0 && <span>💬 {t.comments}</span>}
+        </span>
+      </div>
+    </KanbanCard>
   );
 }
+
+/** Name + small avatar ("Me" for the viewer). */
+const Person = ({ id, name, me }) => (
+  <span className={s.person}>
+    <Avatar name={name || '—'} size={22} />
+    <span className={s.nowrap}>{id === me ? 'Me' : name || '—'}</span>
+  </span>
+);
 
 /** /team-tasks — tasks given down the "Reports to" hierarchy; independent of projects. */
 export default function TeamTasksPage() {
@@ -33,13 +60,6 @@ export default function TeamTasksPage() {
   const T = sod(now);
   const st = useStore(useShallow((x) => ({ teamTasks: x.teamTasks, users: x.users, roles: x.roles, viewAs: x.viewAs, auth: x.auth, me: x.me })));
   const openModal = useStore((x) => x.openModal);
-  const updateTeamTask = useStore((x) => x.updateTeamTask);
-  const delTeamTask = useStore((x) => x.delTeamTask);
-  const attachTeamTask = useStore((x) => x.attachTeamTask);
-  const removeTeamTaskDoc = useStore((x) => x.removeTeamTaskDoc);
-  const [showFiles, setShowFiles] = useState(null);
-  const setPj = useStore((x) => x.setPj);
-  const selectLead = useStore((x) => x.selectLead);
 
   const me = viewerId(st);
   // Who added a file: "Me", the assignee (labelled), the person who gave the task, or anyone else by name.
@@ -56,17 +76,23 @@ export default function TeamTasksPage() {
   const [q, setQ] = useState('');
   const [who, setWho] = useState('');
   const [rel, setRel] = useState('');
-  // Files picked with 📎 wait here for an optional title before upload.
-  const [pending, setPending] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const uploadPending = async () => {
-    if (!pending || uploading) return;
-    setUploading(true);
-    const ok = await attachTeamTask(pending.id, pending.files, pending.title);
-    setUploading(false);
-    if (ok) { setShowFiles(pending.id); setPending(null); }
+  const [sel, setSel] = useState(null); // task id open in the drawer
+  const [reopenAs, setReopenAs] = useState(null); // board drag out of Done → drawer asks why
+  const [view, setViewState] = useState(readView);
+  const setView = (v) => { setViewState(v); try { localStorage.setItem(VIEW_KEY, v); } catch { /* private mode */ } };
+  const updateTeamTask = useStore((x) => x.updateTeamTask);
+  const flash = useStore((x) => x.flash);
+  const openTask = (id, reopen = null) => { setReopenAs(reopen); setSel(id); };
+  // Board drag: change status; reopening a Done task opens the drawer to ask why.
+  const moveTask = (id, to) => {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) return;
+    if (!t.canStatus) { flash('Only the assignee or whoever gave this task can change its status.'); return; }
+    if (t.status === 'Done') { openTask(id, to); return; }
+    if (to === 'Reopened') { flash('Only a Done task can be reopened — drag it from Done.'); return; }
+    updateTeamTask(id, { status: to });
   };
-
+  const selTask = sel ? tasks.find((t) => t.id === sel) : null;
   const statusTest = (t) => (status === 'open' ? t.status !== 'Done' : status === 'all' ? true : t.status === status);
   const tabs = useMemo(() => [
     ['mine', 'Assigned to me'], ['given', 'Given by me'], ['team', 'My team'], ['all', 'All'],
@@ -86,11 +112,11 @@ export default function TeamTasksPage() {
     const qq = q.trim().toLowerCase();
     const rank = { High: 0, Medium: 1, Low: 2 };
     return tasks
-      .filter((t) => test(t) && statusTest(t) && (!who || t.a === who) && (!rel || (rel === 'project' ? t.p : rel === 'lead' ? t.lead : !t.p && !t.lead))
+      .filter((t) => test(t) && (view === 'board' || statusTest(t)) && (!who || t.a === who) && (!rel || (rel === 'project' ? t.p : rel === 'lead' ? t.lead : !t.p && !t.lead))
         && (!qq || `${t.title} ${t.notes} ${t.aName} ${t.byName} ${t.pName} ${t.leadName}`.toLowerCase().includes(qq)))
       .sort((a, b) => (a.status === 'Done') - (b.status === 'Done') || (a.due ?? Infinity) - (b.due ?? Infinity) || rank[a.prio] - rank[b.prio] || b.at - a.at);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasks, tab, me, team, status, q, who, rel]);
+  }, [tasks, tab, me, team, status, q, who, rel, view]);
 
   const counts = useMemo(() => {
     const test = tabTest(tab, me, team);
@@ -102,79 +128,30 @@ export default function TeamTasksPage() {
     {
       key: 'title', label: 'Task', render: (t) => (
         <div className={s.taskCell}>
-          <div className={s.title} style={t.status === 'Done' ? { textDecoration: 'line-through', color: 'var(--muted)' } : undefined}>{t.title}</div>
-          {(t.p || t.lead) && (
-            <div className={s.links}>
-              {t.p && <button type="button" className={s.linkChip} onClick={() => setPj({ selP: t.p, selM: null, exp: null, exp2: null })} title="Open project">▣ {t.pName || t.p}</button>}
-              {t.lead && <button type="button" className={s.linkChipLead} onClick={() => selectLead(t.lead)} title="Open lead">◆ {t.leadName || t.lead}</button>}
-            </div>
-          )}
-          {t.notes && <div className={s.notes}>{t.notes}</div>}
-          {t.atts.length > 0 && (
-            <button type="button" className={s.filesBtn} onClick={() => setShowFiles(showFiles === t.id ? null : t.id)} aria-expanded={showFiles === t.id}>
-              📎 {t.atts.length} file{t.atts.length === 1 ? '' : 's'} {showFiles === t.id ? '▴' : '▾'}
-            </button>
-          )}
-          {showFiles === t.id && (
-            <DocumentList
-              docs={t.atts.map((d) => ({ ...d, byName: uploader(t, d) }))}
-              editable={false}
-              canRemove={(d) => t.canEdit || (t.canStatus && d.by === me)}
-              onRemove={(_, d) => removeTeamTaskDoc(t.id, d)}
-            />
-          )}
-          {pending && pending.id === t.id && (
-            <div className={s.attachPanel}>
-              <div className={s.attachFiles}>📎 {pending.files.map((f) => f.name).join(', ')}</div>
-              <input
-                className={s.attachTitle}
-                autoFocus
-                maxLength={200}
-                value={pending.title}
-                placeholder="Add a title (optional) — e.g. Login screen design"
-                onChange={(e) => setPending({ ...pending, title: e.target.value })}
-                onKeyDown={(e) => { if (e.key === 'Enter') uploadPending(); if (e.key === 'Escape') setPending(null); }}
-              />
-              <div className={s.attachActions}>
-                <Button size="sm" variant="primary" disabled={uploading} onClick={uploadPending}>{uploading ? 'Uploading…' : 'Upload'}</Button>
-                <Button size="sm" variant="secondary" onClick={() => setPending(null)}>Cancel</Button>
-              </div>
-            </div>
-          )}
-          <ProgressNote key={`${t.id}-${t.upd}`} t={t} onSave={(v) => updateTeamTask(t.id, { upd: v })} />
+          <div className={`${s.title} ${t.status === 'Done' ? s.titleDone : ''}`}>{t.title}</div>
+          <div className={s.metaLine}>
+            {t.p && <span className={s.linkChip}>▣ {t.pName || t.p}</span>}
+            {t.lead && <span className={s.linkChipLead}>◆ {t.leadName || t.lead}</span>}
+            {t.atts.length > 0 && <span className={s.meta} title="Files">📎 {t.atts.length}</span>}
+            {t.comments > 0 && <span className={s.meta} title="Comments">💬 {t.comments}</span>}
+            {t.upd && <span className={s.upd} title={t.upd}>↳ {t.upd}</span>}
+          </div>
         </div>
       ),
     },
-    { key: 'a', label: 'Assigned to', render: (t) => <span className={s.nowrap}>{t.a === me ? 'Me' : t.aName}</span> },
-    { key: 'by', label: 'Given by', render: (t) => <span className={s.nowrap}>{t.by === me ? 'Me' : t.byName || '—'}</span> },
+    { key: 'a', label: 'Assigned to', render: (t) => <Person id={t.a} name={t.aName} me={me} /> },
+    { key: 'by', label: 'Given by', render: (t) => <Person id={t.by} name={t.byName} me={me} /> },
     {
       key: 'due', label: 'Due', render: (t) => {
         if (!t.due) return <span className={s.muted}>—</span>;
         const late = t.status !== 'Done' && t.due < T;
-        return <span className={s.nowrap} style={late ? { color: 'var(--red, oklch(0.55 0.2 25))', fontWeight: 600 } : undefined}>{fday(t.due)}{late ? ' · overdue' : t.due === T ? ' · today' : ''}</span>;
+        return <span className={`${s.nowrap} ${late ? s.late : ''}`}>{fday(t.due)}{late ? ' · overdue' : t.due === T ? ' · today' : ''}</span>;
       },
     },
-    { key: 'est', label: 'Estimate', align: 'right', render: (t) => (t.est ? <span className={s.nowrap}>{t.est}h</span> : <span className={s.muted}>—</span>) },
+    { key: 'est', label: 'Est.', align: 'right', render: (t) => (t.est ? <span className={s.nowrap}>{t.est}h</span> : <span className={s.muted}>—</span>) },
     { key: 'prio', label: 'Priority', render: (t) => <HuePill hue={PRIO_HUE[t.prio]} size="sm">{t.prio}</HuePill> },
-    {
-      key: 'status', label: 'Status', render: (t) => (t.canStatus
-        ? <Select compact value={t.status} options={STATUS_OPTS} onChange={(e) => updateTeamTask(t.id, { status: e.target.value })} aria-label={`Status of ${t.title}`} />
-        : <HuePill hue={STATUS_HUE[t.status]} size="sm" dot>{t.status}</HuePill>),
-    },
-    {
-      key: 'act', label: '', align: 'right', render: (t) => (
-        <div className={s.actions}>
-          {t.canStatus && (
-            <label className={s.attachBtn} title="Attach files">
-              📎
-              <input type="file" multiple hidden onChange={(e) => { const f = Array.from(e.target.files || []); e.target.value = ''; if (f.length) setPending({ id: t.id, files: f.slice(0, 10), title: '' }); }} />
-            </label>
-          )}
-          {t.canEdit && <Button size="sm" variant="secondary" onClick={() => openModal('tt', { editId: t.id })}>Edit</Button>}
-          {t.canDelete && <ConfirmButton size="sm" onConfirm={() => delTeamTask(t.id)} confirmLabel="Delete?">Delete</ConfirmButton>}
-        </div>
-      ),
-    },
+    { key: 'status', label: 'Status', render: (t) => <HuePill hue={STATUS_HUE[t.status]} size="sm" dot>{t.status}</HuePill> },
+    { key: 'go', label: '', align: 'right', render: () => <span className={s.chev} aria-hidden>›</span> },
   ];
 
   const chips = [
@@ -196,20 +173,45 @@ export default function TeamTasksPage() {
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
 
       <Toolbar>
-        <FilterChips items={chips} value={status} onChange={setStatus} label="Status" />
+        <SegmentedControl options={VIEWS} value={view} onChange={setView} />
+        {view === 'list' && <FilterChips items={chips} value={status} onChange={setStatus} label="Status" />}
         <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search tasks or people" style={{ flex: '1 1 200px', minWidth: 170 }} />
         <Select value={rel} onChange={(e) => setRel(e.target.value)} options={REL_OPTS} aria-label="Related to" />
         {tab !== 'mine' && <Select value={who} onChange={(e) => setWho(e.target.value)} options={people} aria-label="Assigned to" />}
       </Toolbar>
 
+      {view === 'board' ? (
+        <KanbanBoard
+          label="Team tasks board"
+          minColWidth={300}
+          onMove={moveTask}
+          renderCard={(t) => <BoardCard t={t} me={me} T={T} onOpen={() => openTask(t.id)} />}
+          columns={TT_STATUSES.map((st) => {
+            const items = rows.filter((t) => t.status === st);
+            const est = items.reduce((x, t) => x + (+t.est || 0), 0);
+            return {
+              key: st,
+              name: st,
+              dot: `oklch(0.62 0.14 ${STATUS_HUE[st]})`,
+              items,
+              meta: est ? `${Math.round(est * 10) / 10}h est.` : null,
+              emptyText: st === 'Done' ? 'Drop finished tasks here' : st === 'Reopened' ? 'Drag a Done task here to reopen it' : 'Nothing here',
+              ...(st === 'To do' && perm.c ? { onAdd: () => openModal('tt', {}), addLabel: 'New task' } : {}),
+            };
+          })}
+        />
+      ) : (
       <DataTable
         itemLabel="tasks"
         columns={columns}
         rows={rows}
-        minWidth={960}
+        minWidth={900}
+        onRowClick={(t) => openTask(t.id)}
         resetKey={`${tab}|${status}|${who}|${q}|${rel}`}
         empty={tab === 'mine' ? 'No tasks assigned to you here.' : tab === 'team' && team.size === 0 ? 'Nobody reports to you yet — set "Reports to" on their user in Users & roles.' : 'No tasks here.'}
       />
+      )}
+      {selTask && <TaskDrawer key={`${selTask.id}|${reopenAs || ''}`} t={selTask} me={me} T={T} uploader={uploader} reopenAs={reopenAs} onClose={() => { setSel(null); setReopenAs(null); }} />}
     </div>
   );
 }

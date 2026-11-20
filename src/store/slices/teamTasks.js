@@ -44,9 +44,11 @@ export const createTeamTasksSlice = (set, get) => ({
     const body = {};
     if (patch.status !== undefined) body.status = patch.status;
     if (patch.upd !== undefined) body.updateNote = patch.upd;
+    if (patch.comment) body.comment = patch.comment;
+    const { comment, ...shown } = patch; // eslint-disable-line no-unused-vars
     const res = await optimistic(
       set, get,
-      (s) => ({ teamTasks: (s.teamTasks || []).map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
+      (s) => ({ teamTasks: (s.teamTasks || []).map((x) => (x.id === id ? { ...x, ...shown } : x)) }),
       () => teamTasksApi.update(id, body),
     );
     if (res && !res.removed) set((s) => ({ teamTasks: upsert(s.teamTasks, fromApiTeamTask(res)) }));

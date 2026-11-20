@@ -162,7 +162,9 @@ export const createWorkdaySlice = (set, get) => {
       if (!sales) {
         const todays = (S.logs || []).filter((l) => l.m === pid && l.d === T);
         const tm = (liveBase(S.live).timers || {})[pid];
-        const ids = (S.projects || []).filter((p) => p.status === 'Running' && (p.team || []).includes(pid)).map((p) => p.id);
+        const msMine = new Set((S.milestones || []).filter((x) => (x.team || []).includes(pid)).map((x) => x.p));
+        const ids = (S.projects || []).filter((p) => p.status === 'Running' && ((p.team || []).includes(pid) || p.pm === pid || msMine.has(p.id))).map((p) => p.id);
+        (S.projects || []).filter((p) => p.pm === pid && ['Planning', 'On hold'].includes(p.status) && !ids.includes(p.id)).forEach((p) => ids.push(p.id));
         todays.forEach((l) => { if (!ids.includes(l.p)) ids.push(l.p); });
         if (tm && tm.p && !ids.includes(tm.p)) ids.push(tm.p);
         m.rows = ids.length ? ids.map((id) => {

@@ -26,6 +26,8 @@ export const fromApiTeamTask = (t) => ({
   upd: t.updateNote || '',
   doneAt: ms(t.doneAt),
   at: ms(t.createdAt) || 0,
+  comments: t.comments || 0,
+  events: t.events || 0,
   canEdit: !!t.canEdit,
   canDelete: !!t.canDelete,
   canStatus: !!t.canUpdateStatus,
@@ -49,6 +51,7 @@ export const toApiTeamTask = (f) => ({
   leadId: f.lead || null,
   assigneeId: f.a,
   ...(f.status ? { status: f.status } : {}),
+  ...(f.reopenWhy && f.reopenWhy.trim() ? { comment: f.reopenWhy.trim() } : {}),
 });
 
 export const teamTasksApi = {
@@ -58,6 +61,8 @@ export const teamTasksApi = {
   upload: (id, files, title = '') => api.upload(`/team-tasks/${id}/attachments`, files, title.trim() ? { title: title.trim() } : {}),
   removeDoc: (docId) => api.del(`/documents/${docId}`),
   assignees: () => api.get('/team-tasks/assignees'),
+  activity: (id) => api.get(`/team-tasks/${id}/activity`),
+  comment: (id, text) => api.post(`/team-tasks/${id}/comments`, { text }),
 };
 
 /** Bootstrap: every team task the user may see (staff only; clients get none). */

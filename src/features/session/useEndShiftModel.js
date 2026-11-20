@@ -49,8 +49,11 @@ export function useEndShiftModel(pid, sales, now) {
       return base;
     }
 
-    const mine = S.projects.filter((x) => x.team.includes(pid) && x.status !== 'Cancelled');
-    const others = S.projects.filter((x) => !x.team.includes(pid) && ['Running', 'Planning', 'On hold'].includes(x.status));
+    // On the team, the PM, or on a milestone team of the project.
+    const msMine = new Set(S.milestones.filter((x) => (x.team || []).includes(pid)).map((x) => x.p));
+    const onIt = (x) => x.team.includes(pid) || x.pm === pid || msMine.has(x.id);
+    const mine = S.projects.filter((x) => onIt(x) && x.status !== 'Cancelled');
+    const others = S.projects.filter((x) => !onIt(x) && ['Running', 'Planning', 'On hold'].includes(x.status));
     base.projOpts = mine.map((x) => ({ value: x.id, label: x.name }))
       .concat(others.map((x) => ({ value: x.id, label: `${x.name} (not on team)` })));
     const msByProject = {};

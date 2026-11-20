@@ -7,10 +7,9 @@ import { Button, DocumentList, ErrorText, Field, FileDropzone, Input, Modal, Sel
 import { useAttach } from '@/features/projects/hooks/useAttach';
 import { teamTasksApi } from '@/api/teamTasks';
 import { ymd } from '@/lib/date';
-import { TT_STATUSES, isPreview, previewAssignees, viewerId } from './model';
+import { statusChoices, isPreview, previewAssignees, viewerId } from './model';
 
 const PRIO_OPTS = ['High', 'Medium', 'Low'].map((p) => ({ value: p, label: p }));
-const STATUS_OPTS = TT_STATUSES.map((p) => ({ value: p, label: p }));
 
 /** Create / edit a team task (ModalHost kind 'tt'). Props: {editId?, assignee?, onClose}. */
 export default function TeamTaskModal({ editId, assignee, projectId, leadId, onClose }) {
@@ -64,10 +63,12 @@ export default function TeamTaskModal({ editId, assignee, projectId, leadId, onC
 
   const bind = (k) => ({ value: form[k], onChange: (e) => setForm((f) => ({ ...f, [k]: e && e.target ? e.target.value : e })) });
 
+  const reopening = !!editing && editing.status === 'Done' && form.status && form.status !== 'Done';
   const save = async () => {
     if (busy) return;
     if (!form.title.trim()) return setErr('Add a title.');
     if (!form.a) return setErr('Pick who this task is for.');
+    if (reopening && !(form.reopenWhy || '').trim()) return setErr('Write why you are reopening this task.');
     if (form.est !== '' && !(+form.est >= 0 && +form.est <= 1000)) return setErr('Estimated time should be between 0 and 1000 hours.');
     setBusy(true);
     const e = await saveTeamTask(form, editId || undefined);
@@ -106,8 +107,13 @@ export default function TeamTaskModal({ editId, assignee, projectId, leadId, onC
           <Field label="Due date"><Input type="date" {...bind('due')} /></Field>
           <Field label="Estimated time (hours)"><Input type="number" min="0" max="1000" step="0.5" placeholder="e.g. 4" {...bind('est')} /></Field>
           <Field label="Priority"><Select {...bind('prio')} options={PRIO_OPTS} /></Field>
-          {editing && <Field label="Status"><Select {...bind('status')} options={STATUS_OPTS} /></Field>}
+          {editing && <Field label="Status"><Select {...bind('status')} options={statusChoices(editing.status)} /></Field>}
         </div>
+        {reopening && (
+          <Field label="Why are you reopening it?" hint="Required · shown in the task timeline">
+            <Input value={form.reopenWhy || ''} maxLength={5000} placeholder="e.g. Client found a bug on the checkout page" onChange={(e) => setForm((f) => ({ ...f, reopenWhy: e.target.value }))} />
+          </Field>
+        )}
         <Field label="Attachments">
           <FileDropzone compact hint="Screenshots, docs, sheets · up to 10 MB each" onFiles={(files) => attach(files, (atts) => setForm((f) => ({ ...f, atts: f.atts.concat(atts) })))} />
         </Field>

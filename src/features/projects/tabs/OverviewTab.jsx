@@ -10,6 +10,7 @@ import { hh, money, pctW } from '@/lib/format';
 import { PROJECT_STATUS, TEAMS } from '@/config/constants';
 import { HealthPill } from '../components/bits';
 import ProjectsGlance from './ProjectsGlance';
+import PrimaryDevs from '../components/PrimaryDevs';
 import { useProjectNav } from '../hooks/useProjectNav';
 import { NEUTRAL_DOT, STATUS_KEYS } from '../lib/view';
 import s from './tabs.module.css';
@@ -117,6 +118,7 @@ export default function OverviewTab() {
         ))}
       </div>
 
+      <PrimaryDevs />
       <ProjectsGlance model={model} tasks={tasks} bugs={bugs} openProject={openProject} openMember={openMember} />
 
       <div className={s.split}>

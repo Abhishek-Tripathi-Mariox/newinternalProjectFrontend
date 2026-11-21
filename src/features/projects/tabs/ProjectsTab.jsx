@@ -7,6 +7,7 @@ import { avatarOf } from '@/domain/projects';
 import { tone } from '@/lib/color';
 import { hh } from '@/lib/format';
 import { fd } from '@/lib/date';
+import PrimaryDevs from '../components/PrimaryDevs';
 import { nextSort, sortProjectRows, SORTABLE } from '../lib/projectSort';
 import { PRIORITIES, PROJECT_STATUS } from '@/config/constants';
 import ProjectCard from '../components/ProjectCard';
@@ -219,6 +220,7 @@ export default function ProjectsTab() {
 
   return (
     <div className={s.stack}>
+      <PrimaryDevs />
       <div className={s.bar}>
         <FilterChips className={s.barChips} items={chips} value={status} onChange={(k) => setPjF({ status: k })} tone="dark" />
         <SegmentedControl options={VIEWS} value={isBoard ? 'board' : 'table'} onChange={(v) => setPj({ pView: v })} />
